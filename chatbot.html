@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prof</title>
+    <style>
+        /* Light theme styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9; /* Light background */
+            color: #092742; /* Deep blue text */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center all elements */
+            justify-content: flex-start; /* Align at the top */
+            height: 100vh; /* Full viewport height */
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        h1 {
+            color: #092742; /* Deep blue */
+            text-align: center;
+            margin-top: 20px;
+            font-size: 24px; /* Lower font size */
+        }
+
+        /* Chat container for history */
+        .chat-container {
+            flex-grow: 1; /* Allow this to grow and fill available space */
+            overflow-y: auto; /* Enable scrolling if content overflows */
+            padding: 20px;
+            width: 100%; /* Use full width */
+            max-width: 600px; /* Increased maximum width */
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        /* Individual message styling */
+        .message {
+            padding: 10px 15px; /* Adjusted padding for better fit */
+            border-radius: 20px;
+            margin-bottom: 10px;
+            max-width: 90%; /* Increased max width for messages */
+            word-wrap: break-word;
+            overflow-wrap: break-word; /* Break long words */
+            display: block; /* Ensure messages are block elements */
+        }
+
+        /* User message styling */
+        .user-message {
+            background-color: #092742; /* Deep blue background for user message */
+            color: #f9f9f9; /* Light text */
+            align-self: flex-end; /* Align user message to right */
+            text-align: right; /* Align text to the right */
+        }
+
+        .user-message:hover {
+            border: 2px solid #092742; /* Blue border on hover */
+            border-radius: 10px; /* Rounded corners for the hover border */
+            transition: border 0.1s ease; /* Smooth transition effect */
+        }
+
+        /* Bot message styling */
+        .bot-message {
+            background-color: #e5e5e5; /* Light gray background for bot message */
+            color: #092742; /* Deep blue text */
+            align-self: flex-start; /* Align bot message to left */
+        }
+
+        .bot-message:hover {
+            border: 2px solid #092742; /* Blue border on hover */
+            border-radius: 10px; /* Rounded corners for the hover border */
+            transition: border 0.1s ease; /* Smooth transition effect */
+        }
+
+        /* Input form styling */
+        .input-container {
+            display: flex;
+            justify-content: center; /* Center the input bar */
+            padding: 10px;
+            background-color: #f9f9f9; /* Light background */
+            width: 100%; /* Use full width */
+            max-width: 600px; /* Increased maximum width */
+            position: relative; /* Position relative for absolute children */
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        .input-box {
+            width: 85%;
+            padding: 10px;
+            background-color: #e5e5e5; /* Light gray background for input */
+            color: #092742; /* Deep blue text */
+            border: none;
+            border-radius: 20px; /* Curvy input */
+            transition: background-color 0.3s; /* Smooth transition */
+        }
+
+        .input-box:focus,
+        .input-box:hover {
+            background-color: #d0d0d0; /* Darker gray on focus/hover */
+            outline: none; /* Remove outline */
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #092742; /* Deep blue background */
+            color: #f9f9f9; /* Light text */
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-left: 10px; /* Space between input and button */
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #07426a; /* Darker blue on hover */
+        }
+        
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Scrollbar styling */
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: #092742; /* Blue scrollbar thumb */
+            border-radius: 10px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background-color: #e5e5e5; /* Light gray track */
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            color: #092742; /* Text color */
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #444; /* Border color */
+        }
+
+        th {
+            background-color: #d0d0d0; /* Header background */
+        }
+
+        /* Bold styling */
+        .bold {
+            font-weight: bold;
+        }
+
+        #calculator {
+            position: absolute;
+            z-index: 1000;
+            width: 600px;
+            height: 400px;
+            background-color: rgba(255, 255, 255, 0.8); /* Light transparent background */
+            border: 1px solid #092742;
+            display: none; /* Initially hidden */
+        }
+
+        /* Draggable areas */
+        #calculator.draggable-border {
+            cursor: move;
+        }
+
+    </style>
+
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        svg: { fontCache: 'global' }
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://www.desmos.com/api/v1.9/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+
+</head>
+<body>
+    <h1>Prof</h1>
+
+    <div class="chat-container" id="chat-container">
+        <ul id="chat-history"></ul>
+    </div>
+
+    <div class="input-container">
+        <button id="desmos-btn">Desmos</button>
+        <input type="text" id="user_input" placeholder="Type your message here..." class="input-box" required>
+        <button type="submit" id="submit-btn">Enter</button>
+    </div>
+
+    <div id="calculator"></div>
+
+    <script>
+        let calculator; // Store the calculator instance
+        let isCalculatorOpen = false; // Track if the calculator is open
+
+        // Function to open the Desmos calculator
+        document.getElementById('desmos-btn').addEventListener('click', function() {
+            const elt = document.getElementById('calculator');
+
+            if (!isCalculatorOpen) {
+                // Only create a new instance if none exists
+                calculator = Desmos.GraphingCalculator(elt);
+                elt.style.display = 'block'; // Show the calculator
+                elt.style.top = '50px'; // Position calculator
+                elt.style.left = '50px';
+                isCalculatorOpen = true;
+            } else {
+                elt.style.display = (elt.style.display === 'none') ? 'block' : 'none';
+            }
+        });
+
+        // Close the calculator when Escape key is pressed
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const elt = document.getElementById('calculator');
+                if (elt.style.display === 'block') {
+                    elt.style.display = 'none'; // Hide the calculator
+                }
+            }
+        });
+
+        // Function to handle drag when near the borders
+        let dragActive = false;
+        let initialMouseX, initialMouseY, initialTop, initialLeft;
+
+        document.getElementById('calculator').addEventListener('mousedown', function(e) {
+            const calc = document.getElementById('calculator');
+            const rect = calc.getBoundingClientRect();
+            const borderMargin = 15; // Area near borders that will be draggable
+
+            if (
+                (e.clientX < rect.left + borderMargin || e.clientX > rect.right - borderMargin) ||
+                (e.clientY < rect.top + borderMargin || e.clientY > rect.bottom - borderMargin)
+            ) {
+                dragActive = true;
+                initialMouseX = e.clientX;
+                initialMouseY = e.clientY;
+                initialTop = rect.top;
+                initialLeft = rect.left;
+                calc.classList.add('draggable-border');
+                document.onmousemove = elementDrag;
+                document.onmouseup = closeDragElement;
+            }
+        });
+
+        function elementDrag(e) {
+            if (!dragActive) return;
+            const calc = document.getElementById('calculator');
+            const deltaX = e.clientX - initialMouseX;
+            const deltaY = e.clientY - initialMouseY;
+            calc.style.top = (initialTop + deltaY) + 'px';
+            calc.style.left = (initialLeft + deltaX) + 'px';
+        }
+
+        function closeDragElement() {
+            dragActive = false;
+            document.onmousemove = null;
+            document.onmouseup = null;
+            document.getElementById('calculator').classList.remove('draggable-border');
+        }
+
+        document.getElementById('submit-btn').addEventListener('click', async function() {
+            const userInput = document.getElementById('user_input').value.trim();
+            if (userInput === '') return;  // Prevent sending empty messages
+            
+            const chatHistory = document.getElementById('chat-history');
+            const chatContainer = document.getElementById('chat-container');
+
+            // Add user's message to chat history
+            const userMessage = document.createElement('li');
+            userMessage.classList.add('message', 'user-message');
+            userMessage.textContent = userInput;
+            chatHistory.appendChild(userMessage);
+
+            // Clear the input box
+            document.getElementById('user_input').value = '';
+
+            // Scroll to the bottom after new message is added
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Change button text to "Generating..."
+            const submitButton = document.getElementById('submit-btn');
+            submitButton.textContent = 'Generating...';
+            submitButton.disabled = true; // Disable the button to prevent multiple submissions
+
+            try {
+                // Send a request to the Python backend
+                const response = await fetch('http://localhost:8000/chatbot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_input: userInput })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    let chatbotResponse = data.response;
+
+                    // Process the chatbot response
+                    chatbotResponse = chatbotResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold
+                    chatbotResponse = chatbotResponse.replace(/\#\#\#/g, '\\[\\]'); // For square brackets
+
+                    // Split response based on ###, *, and numberings
+                    const formattedResponse = chatbotResponse.split(/###|\*|\d+\.\s+/).map(part => part.trim()).filter(part => part !== '');
+                    const botMessage = document.createElement('li');
+                    botMessage.classList.add('message', 'bot-message');
+
+                    // Join the parts with line breaks
+                    botMessage.innerHTML = formattedResponse.map(part => `<div style="margin: 10px 0;">${part}</div>`).join(''); // Line space between parts
+                    chatHistory.appendChild(botMessage);
+
+                    // Trigger MathJax typesetting for new content
+                    MathJax.typesetPromise([botMessage]).then(() => {
+                        console.log('MathJax rendering complete.');
+                    }).catch((err) => console.error('MathJax rendering failed:', err));
+ // Process all elements in the document
+
+                    // Scroll to the bottom after chatbot's response
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    const errorMessage = document.createElement('li');
+                    errorMessage.textContent = `Error: ${response.status} ${response.statusText}`;
+                    errorMessage.classList.add('message', 'bot-message');
+                    chatHistory.appendChild(errorMessage);
+                }
+            } catch (error) {
+                const errorMessage = document.createElement('li');
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.classList.add('message', 'bot-message');
+                chatHistory.appendChild(errorMessage);
+            } finally {
+                // Restore button text and enable it again
+                submitButton.textContent = 'Enter';
+                submitButton.disabled = false; // Re-enable the button
+            }
+
+            // Scroll to the bottom after all processing is done
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        });
+
+        // Also submit on pressing Enter key
+        document.getElementById('user_input').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent page refresh
+                document.getElementById('submit-btn').click(); // Trigger submit
+            }
+        });
+    </script>
+</body>
+</html>

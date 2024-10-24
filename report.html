@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Body styling */
+        body {
+            background-image: url('bg.png'); /* Same background as contact.html */
+            background-size: cover;
+            background-position: center 91px;
+            background-repeat: no-repeat;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Sidebar Styles (from teacher's portal) */
+        .sidebar {
+            background-color: #092742;
+            color: #ffffff;
+            width: 270px; 
+            height: 100vh;
+            padding: 20px;
+            padding-right: 10px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h2 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            margin: 10px 0;
+            padding: 10px;
+        }
+
+        .sidebar a {
+            color: #ffffff;
+            text-decoration: none;
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #4460AA;
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px; /* Add padding to account for navbar height */
+        }
+
+        /* Navbar Styles (from teacher's portal) */
+        .navbar {
+            background-color: #f7f7f7;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar img {
+            height: 50px;
+        }
+
+        .navbar h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        /* Help Form Card */
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            margin: 50px auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+        }
+
+        .form-control,
+        .form-control:focus {
+            border-color: #1B5DA1;
+            box-shadow: none;
+        }
+
+        .btn-custom {
+            background-color: rgb(16, 14, 138);
+            color: white;
+        }
+
+        .btn-custom:hover {
+            background-color: #092742;
+        }
+    </style>
+
+    <script type="text/javascript">
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        (function () {
+            emailjs.init('G6OPrOOYIbStVQnFh'); // EmailJS initialization
+        })();
+
+        
+function displayUserData() {
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            const userId = user.uid;
+            db.ref('users/' + userId).once('value').then((snapshot) => {
+                const userData = snapshot.val();
+                if (userData) {
+                    console.log('hello')
+                    document.getElementById('welcome-message').textContent = `Welcome, ${userData.name}!`;
+                    // document.getElementById('user-name').textContent = `Name: ${userData.name}`;
+                    // document.getElementById('user-email').textContent = `Email: ${userData.email}`;
+                    const classesContainer = document.getElementById('classes-container');
+                    Object.keys(userData.classes).forEach((className) => {
+                        const card = document.createElement('div');
+                        card.classList.add('class-card');
+                        card.innerHTML = `
+                            <h3>${className}</h3>
+                        `;
+                        card.onclick = function() {
+                            window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+                        };
+                        classesContainer.appendChild(card);
+                    });
+                }
+            }).catch((error) => {
+                console.error("Error fetching user data:", error);
+            });
+        }
+        else{
+            console.log("Not Signed In")
+            window.location.href="user.html"
+        }
+    });
+}
+
+
+// Call this function when the page loads
+document.addEventListener('DOMContentLoaded', displayUserData);
+
+
+        function sendHelpMessage(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const message = document.getElementById('message').value;
+
+            const params = {
+                name: name,
+                email: email,
+                message: message
+            };
+
+            emailjs.send('service_m0k1jja', 'template_jlijqg4', params)
+                .then(function (response) {
+                    alert('Your query has been submitted successfully!');
+                    document.getElementById('help-form').reset();
+                }, function (error) {
+                    alert('Failed to send your query: ' + JSON.stringify(error));
+                });
+        }
+    </script>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Teacher's Dashboard</h2>
+        <a href="teacher.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="myAccount.html"><i class="fas fa-user"></i> My Account</a> <!-- My Account Button -->
+        <a href="class.html"><i class="fas fa-plus"></i> Create Class</a> <!-- Create Class Button -->
+        <a href="report.html"><i class="fas fa-info-circle"></i> Help</a> <!-- Help Button -->
+        <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</a> <!-- Sign Out Button -->
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Navbar -->
+        <div class="navbar">
+            <div> 
+                <a href="#">
+                    <img src="assets/ExamNexus.png" alt="Logo">
+                </a>
+            </div>
+            <h1 id="welcome-message"></h1>
+        </div>
+
+        <!-- Help Form Section -->
+        <div class="card">
+            <h1 class="text-center mb-4"><b>Need Help?</b></h1>
+            <p style="text-align: center;">Submit your query below, and we will get back to you shortly.</p>
+            <form id="help-form" onsubmit="sendHelpMessage(event)">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea class="form-control" id="message" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-custom" style="display: block; margin: 0 auto; width: 100%;">Submit Query</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+</body>
+
+</html>

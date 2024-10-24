@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="class.css" rel="stylesheet" type="text/css" />
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        th {
+            background-color: #30D5C8;
+            color: white;
+        }
+
+        textarea, input {
+            width: 100%;
+            max-width: 150px;
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        select {
+            width: 100%;
+            max-width: 150px;
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: #30D5C8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #28b4a4;
+        }
+
+        /* New CSS for Three-Dot Menu and Dropdown */
+        .test-card {
+            position: relative;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-card h3 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .test-card p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .menu {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 30px;
+            right: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .dropdown-menu button {
+            display: block;
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .dropdown-menu button:hover {
+            background-color: #f0f0f0;
+        }
+
+        .show {
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="border-bottom: 5px solid white;" id="class-name">ClassName</h2>
+        <a onclick="showClassHome()"><i class="fa-solid fa-house"></i>Class Dashboard</a>
+        <a onclick="showStudentInfo()"><i class="fas fa-info-circle"></i> Student Info</a>
+        <a onclick="showsavedtest()"><i class="fa-solid fa-database"></i>Tests Created</a>
+        <a onclick="showTestCreation()"><i class="fas fa-plus"></i>Create a Test</a>
+        <a onclick="showTestTemplate()"><i class="fas fa-plus"></i>Test Templates</a>
+        <a href="teacher.html" id="user-message"></a>
+    </div>
+
+    <div class="main-content">
+        <h2>Tests Created</h2>
+        <div id="test-cards-container"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+        import { getDatabase, ref, get, remove, set } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+            authDomain: "examnexus-4b46c.firebaseapp.com",
+            databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+            projectId: "examnexus-4b46c",
+            storageBucket: "examnexus-4b46c.appspot.com",
+            messagingSenderId: "889907228722",
+            appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+            measurementId: "G-35EV53YEE5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getDatabase();
+
+        const className = new URLSearchParams(window.location.search).get('className');
+        document.getElementById('class-name').textContent = className;
+
+        window.showStudentInfo = function() {
+            window.location.href = `studentinfo.html?className=${encodeURIComponent(className)}`;
+        };
+        window.showTestCreation = function() {
+            window.location.href = `testCreation.html?className=${encodeURIComponent(className)}`;
+        };
+        window.showsavedtest = function () {
+            window.location.href = `testsaved.html?className=${encodeURIComponent(className)}`;
+        };
+        window.showClassHome = function () {
+            window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const teacherUid = user.uid;
+                    fetchTests(teacherUid, className);
+                } else {
+                    window.location.href = 'user.html';
+                }
+            });
+        });
+
+        function fetchTests(teacherUid, className) {
+            const testsRef = ref(db, `users/${teacherUid}/classes/${className}/tests/`);
+            get(testsRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const tests = snapshot.val();
+                    displayTestCards(tests, teacherUid);
+                } else {
+                    console.log("No tests found");
+                }
+            }).catch((error) => {
+                console.error("Error fetching tests:", error);
+            });
+        }
+
+        function displayTestCards(tests, teacherUid) {
+            const testCardsContainer = document.getElementById('test-cards-container');
+            testCardsContainer.innerHTML = '';
+
+            Object.keys(tests).forEach(testTitle => {
+                const test = tests[testTitle];
+                const testCard = document.createElement('div');
+                testCard.classList.add('test-card');
+                testCard.innerHTML = `
+                    <h3>${test.title}</h3>
+                    <p>Subject: ${test.subject}</p>
+                    <button onclick="editTest('${testTitle}')">Edit Test</button>
+                    <div class="menu" onclick="toggleDropdown('${testTitle}')">&#x22EE;</div>
+                    <div id="dropdown-${testTitle}" class="dropdown-menu">
+                        <button onclick="deleteTest('${teacherUid}', '${className}', '${testTitle}')">Delete</button>
+                        <button onclick="copyTest('${teacherUid}', '${testTitle}')">Copy to</button>
+                    </div>
+                `;
+                testCardsContainer.appendChild(testCard);
+            });
+        }
+
+        window.editTest = function(testTitle) {
+            window.location.href = `editTest.html?className=${encodeURIComponent(className)}&testTitle=${encodeURIComponent(testTitle)}`;
+        };
+
+        // Toggle dropdown menu
+        window.toggleDropdown = function(testTitle) {
+            const dropdown = document.getElementById(`dropdown-${testTitle}`);
+            dropdown.classList.toggle('show');
+        };
+
+        // Delete test
+        window.deleteTest = function(teacherUid, className, testTitle) {
+            const testRef = ref(db, `users/${teacherUid}/classes/${className}/tests/${testTitle}`);
+            remove(testRef).then(() => {
+                alert(`Test "${testTitle}" deleted successfully.`);
+                window.location.reload(); // Reload page after deletion
+            }).catch((error) => {
+                console.error("Error deleting test:", error);
+            });
+        };
+
+        // Copy test to another class
+        window.copyTest = function(teacherUid, testTitle) {
+            const classesRef = ref(db, `users/${teacherUid}/classes`);
+
+            // Get all class names
+            get(classesRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const classes = snapshot.val();
+                    const classNames = Object.keys(classes);
+
+                    // Ask user to select a class to copy the test to
+                    const selectedClass = prompt(`Select class to copy test to:\n${classNames.join("\n")}`);
+
+                    if (selectedClass && classNames.includes(selectedClass)) {
+                        // Get the test data
+                        const testRef = ref(db, `users/${teacherUid}/classes/${className}/tests/${testTitle}`);
+                        get(testRef).then((snapshot) => {
+                            if (snapshot.exists()) {
+                                const testData = snapshot.val();
+
+                                // Copy the test to the selected class
+                                const copyRef = ref(db, `users/${teacherUid}/classes/${selectedClass}/tests/${testTitle}`);
+                                set(copyRef, testData).then(() => {
+                                    alert(`Test "${testTitle}" copied to class "${selectedClass}".`);
+                                }).catch((error) => {
+                                    console.error("Error copying test:", error);
+                                });
+                            }
+                        });
+                    } else {
+                        alert("Invalid class selected.");
+                    }
+                }
+            }).catch((error) => {
+                console.error("Error fetching classes:", error);
+            });
+        };
+
+    </script>
+</body>
+</html>

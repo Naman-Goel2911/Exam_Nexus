@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="class.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Load Chart.js -->
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2 style="border-bottom: 5px solid white;" id="class-name">ClassName</h2>
+        <a onclick="showClassHome()"><i class="fa-solid fa-house"></i>Class Dashboard</a>
+        <a onclick="showStudentInfo()"><i class="fas fa-info-circle"></i> Student Info</a>
+        <a onclick="showsavedtest()"><i class="fa-solid fa-database"></i>Tests Created</a>
+        <a onclick="showTestCreation()"><i class="fas fa-plus"></i>Create a Test</a>
+        <a onclick="showTestTemplate()"><i class="fas fa-plus"></i>Test Templates</a>
+        <a href="teacher.html" id="user-message"></a>
+    </div>
+
+    <!-- Main content area -->
+    <div class="main-content">
+        <h2>Class Performance</h2>
+
+        <!-- Marks Table -->
+        <table id="marks-table" border="1" style="width: 100%; margin-bottom: 20px;">
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Test 1</th>
+                    <th>Test 2</th>
+                    <th>Average</th>
+                </tr>
+            </thead>
+            <tbody id="marks-body">
+            </tbody>
+        </table>
+
+        <!-- Graph container -->
+        <canvas id="averageScoreChart" width="400" height="200"></canvas>
+
+    </div>
+
+<script type="module">
+
+window.showStudentInfo = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `studentinfo.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showTestCreation = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testCreation.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showsavedtest = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testsaved.html?className=${encodeURIComponent(className)}`;
+    }
+
+    window.showClassHome = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+    }
+
+    window.showTestTemplate = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testTemplate.html?className=${encodeURIComponent(className)}`;
+    }
+    
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+        authDomain: "examnexus-4b46c.firebaseapp.com",
+        databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+        projectId: "examnexus-4b46c",
+        storageBucket: "examnexus-4b46c.appspot.com",
+        messagingSenderId: "889907228722",
+        appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+        measurementId: "G-35EV53YEE5"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase();
+
+        // Get className from URL parameters
+        const className = new URLSearchParams(window.location.search).get('className');
+    document.getElementById('class-name').textContent = className;
+
+    // Load student marks and display them in a table and chart
+    async function loadMarksData() {
+        const teacherUID = auth.currentUser.uid;
+        const classRef = ref(db, `users/${teacherUID}/classes/${className}/students`);
+        
+        try {
+            const snapshot = await get(classRef);
+            const studentData = snapshot.val();
+
+            if (studentData) {
+                const students = Object.keys(studentData);
+                const studentsMarksData = {};
+
+                // Fetch test data for each student
+                for (const studentUID of students) {
+                    const studentName = await getStudentName(studentUID); // Fetch student name
+                    const testScoresRef = ref(db, `users/${studentUID}/classes/${className}/tests`);
+                    const testSnapshot = await get(testScoresRef);
+                    const testsData = testSnapshot.val();
+
+                    if (testsData) {
+                        studentsMarksData[studentName] = [];
+
+                        // Aggregate test marks for each student
+                        Object.keys(testsData).forEach(testTitle => {
+                            const test = testsData[testTitle];
+                            const totalMarks = test.totalMarks || 0; // Assuming totalMarks is stored here
+                            studentsMarksData[studentName].push(totalMarks);
+                        });
+                    }
+                }
+
+                // Display marks in a table and chart
+                displayMarksTable(studentsMarksData);
+                displayAverageChart(studentsMarksData);
+            } else {
+                console.error('No student data found.');
+            }
+        } catch (error) {
+            console.error('Error loading marks:', error);
+        }
+    }
+
+    // Fetch student name by UID
+    async function getStudentName(uid) {
+        const userRef = ref(db, `users/${uid}`);
+        const userSnapshot = await get(userRef);
+        const userData = userSnapshot.val();
+        return userData ? userData.name : 'Unknown';
+    }
+
+    // Display student marks in a table
+    function displayMarksTable(studentsData) {
+        const tableBody = document.getElementById('marks-body');
+        tableBody.innerHTML = '';
+
+        Object.keys(studentsData).forEach(student => {
+            const studentMarks = studentsData[student];
+            const average = studentMarks.reduce((a, b) => a + b, 0) / studentMarks.length;
+            const highestScore = Math.max(...studentMarks);
+
+            const row = `<tr>
+                            <td>${student}</td>
+                            <td>${studentMarks[0] || 'N/A'}</td>
+                            <td>${studentMarks[1] || 'N/A'}</td>
+                            <td>${average.toFixed(2)}</td>
+                         </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    // Display the average and highest score chart
+    function displayAverageChart(studentsData) {
+        const studentNames = Object.keys(studentsData);
+        const averageScores = studentNames.map(student => {
+            const marks = studentsData[student];
+            return marks.reduce((a, b) => a + b, 0) / marks.length;
+        });
+
+        const highestScores = studentNames.map(student => {
+            const marks = studentsData[student];
+            return Math.max(...marks);
+        });
+
+        const ctx = document.getElementById('averageScoreChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: studentNames,
+                datasets: [
+                    {
+                        label: 'Average Score',
+                        data: averageScores,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Highest Score',
+                        data: highestScores,
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Authenticate and load data
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loadMarksData();
+        } else {
+            window.location.href = 'login.html';  // Redirect to login if not authenticated
+        }
+    });
+
+    function displayUserData() {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                const userRef = ref(db, 'users/' + userId); // Ensure you use the `db` reference
+
+                get(userRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        if (userData && userData.classes) {
+                            document.getElementById('user-message').innerHTML = `<i class="fa-solid fa-user"></i>Hi, ${userData.name}!`;
+                        } else {
+                            console.error("User data not found or no classes associated.");
+                        }
+                    } else {
+                        console.error("No user data available.");
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching user data:", error);
+                });
+            } else {
+                console.log("Not Signed In");
+                window.location.href = "user.html";
+            }
+        });
+    }
+
+document.addEventListener('DOMContentLoaded', displayUserData);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* General Body Styles */
+        body {
+            background-color: #f7f7f7;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: #092742;
+            color: #ffffff;
+            width: 270px; /* Sidebar width */
+            height: 100vh; /* Full height */
+            padding: 20px;
+            padding-right: 10px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar h2 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            margin: 10px 0;
+            padding: 10px;
+        }
+
+        .sidebar a {
+            color: #ffffff;
+            text-decoration: none;
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #4460AA; /* Sidebar link hover color */
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex-grow: 1; /* Take the remaining width */
+            padding: 20px;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background-color: #f7f7f7;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar img {
+            height: 50px;
+        }
+
+        .navbar h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        /* Welcome Section */
+        #welcome-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        #welcome-message {
+            color: #092742;
+            font-size: 28px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        /* User Info Section */
+        #user-info {
+            background-color: #ffffff;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+
+        #user-info p {
+            color: #092742;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        /* Class Card Styles */
+        .class-card {
+            background-color: #ffffff;
+            padding: 20px;
+            margin: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 250px;
+        }
+
+        .class-card:hover {
+            background-color: #f0f0f5;
+        }
+
+        /* Responsive Flexbox for Class Cards */
+        #classes-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+    <style>
+        .account-info {
+            flex-grow: 1; /* Take the remaining width */
+            padding: 20px;
+        }
+        .info-item {
+            margin: 10px 0;
+        }
+        .info-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Teacher's Dashboard</h2>
+        <a href="teacher.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="myAccount.html"><i class="fas fa-user"></i> My Account</a> <!-- My Account Button -->
+        <a href="class.html"><i class="fas fa-plus"></i> Create Class</a> <!-- Create Class Button -->
+        <a href="report.html"><i class="fas fa-info-circle"></i> Help</a> <!-- Help Button -->
+        <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</a> <!-- Sign Out Button -->
+    </div>
+
+
+
+    <div class="account-info">
+        <div class="navbar">
+            <div> 
+                <a href="teacher.html">
+                    <img src="assets/ExamNexus.png" alt="Logo">
+                </a>
+            </div>
+            <h1 id="welcome-message"></h1>
+        </div>
+        <h2 style="border-bottom: 5px solid #092742;" id="class-name">My Account</h2>
+        <div class="info-item">
+            <span class="info-label">UID:</span> <span id="uid"></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Name:</span> <span id="name"></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Email:</span> <span id="email"></span>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs (using CDN links) -->
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase configuration (from your user.js file)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+            authDomain: "examnexus-4b46c.firebaseapp.com",
+            databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+            projectId: "examnexus-4b46c",
+            storageBucket: "examnexus-4b46c.appspot.com",
+            messagingSenderId: "889907228722",
+            appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+            measurementId: "G-35EV53YEE5"
+        };
+
+        // Initialize Firebase with compat mode
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // Function to display user data
+        const displayUserData = (userData) => {
+            document.getElementById('uid').textContent = userData.uid;
+            document.getElementById('name').textContent = userData.name;
+            document.getElementById('email').textContent = userData.email;
+        };
+
+        // Fetch authenticated user data
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userUid = user.uid;
+                const userEmail = user.email;
+
+                // Fetch additional user data from the Realtime Database
+                db.ref('users/' + userUid).once('value').then((snapshot) => {
+                    const userData = snapshot.val();
+
+                    // Display user information on the page
+                    displayUserData({
+                        uid: userUid,
+                        name: userData.name,
+                        email: userEmail
+                    });
+                }).catch((error) => {
+                    console.error("Error fetching user data:", error);
+                });
+            } else {
+                console.log("No user is signed in.");
+                // Redirect to login page if needed
+                window.location.href = "user.html";
+            }
+        });
+    </script>
+
+</body>
+</html>

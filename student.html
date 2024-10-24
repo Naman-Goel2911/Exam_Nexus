@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Progress</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <scipt src = "student.js"></scipt>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #f7f7f7;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: #092742;
+            color: #ffffff;
+            width: 270px;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        .sidebar h2 {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            color: #ffffff;
+            text-decoration: none;
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #4460AA;
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 295px;
+            padding: 20px;
+            flex: 1;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background-color: #f7f7f7;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar img {
+            height: 50px;
+        }
+
+        .navbar h1 {
+            color: #092742;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        /* User Info Section */
+        #user-info {
+            background-color: #ffffff;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+
+        #user-info p {
+            color: #092742;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        /* Chart container */
+        #progress-chart-container {
+            width: 80%;
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Student's Dashboard</h2>
+        <a href="student.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="myAccountSTUDENT.html"><i class="fas fa-user"></i> My Account</a>
+        <a href="joinClass.html"><i class="fas fa-plus"></i> Join/Change Class</a>
+        <a href="yourTest.html"><i class="fa-solid fa-database"></i> My Tests</a>
+        <a href="report.html"><i class="fas fa-info-circle"></i> Help</a>
+        <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Navbar -->
+        <div class="navbar">
+            <div>
+                <a href="student.html">
+                    <img src="assets/ExamNexus.png" alt="Logo">
+                </a>
+            </div>
+            <h1 id="welcome-message">Welcome, Student</h1>
+        </div>
+
+        <!-- User Info Section -->
+        <div id="user-info">
+            <p id="user-name"></p>
+            <p id="user-email"></p>
+        </div>
+
+        <!-- Chart Container -->
+        <div id="progress-chart-container">
+            <canvas id="progress-chart"></canvas>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <!-- Firebase Configuration -->
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+            authDomain: "examnexus-4b46c.firebaseapp.com",
+            databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+            projectId: "examnexus-4b46c",
+            storageBucket: "examnexus-4b46c.appspot.com",
+            messagingSenderId: "889907228722",
+            appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+            measurementId: "G-35EV53YEE5"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <!-- Fetch Data and Chart.js Integration -->
+    <script>
+        const db = firebase.database();
+
+        // Function to fetch student test data from Firebase
+        function fetchStudentData() {
+            const userId = firebase.auth().currentUser.uid;
+            const studentRef = db.ref(`users/${userId}/classes/`);
+
+            studentRef.once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const tests = [];
+                    const marks = [];
+
+                    // Iterate through classes and tests
+                    for (const className in data) {
+                        if (data[className].tests) {
+                            for (const testTitle in data[className].tests) {
+                                const test = data[className].tests[testTitle];
+                                tests.push(test.testTitle); // Test Title
+                                marks.push(test.totalMarks); // Marks scored
+                            }
+                        }
+                    }
+                    // Call function to generate chart
+                    generateProgressChart(tests, marks);
+                }
+            });
+        }
+
+        // Function to generate student progress chart using Chart.js
+        function generateProgressChart(tests, marks) {
+            const ctx = document.getElementById('progress-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line', // Line graph for progress
+                data: {
+                    labels: tests, // Test names
+                    datasets: [{
+                        label: 'Marks Scored',
+                        data: marks, // Marks
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Marks'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tests'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch data and draw chart after the user is authenticated
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                fetchStudentData();
+            } else {
+                window.location.href = 'user.html';
+            }
+        });
+
+        firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            const userId = user.uid;
+            
+            // Check if the user's password is the default one
+            const savedPassword = localStorage.getItem('teacherPassword');
+            if (savedPassword === 'ExamNexus1') {
+                promptPasswordUpdate(user, savedPassword);
+            } else {
+                // Fetch student data and display it
+                fetchStudentData();
+            }
+        } else {
+            window.location.href = 'user.html'; // Redirect if not authenticated
+        }
+    });
+
+    // Function to prompt the user to update their password
+    function promptPasswordUpdate(user, currentPassword) {
+        const newPassword = prompt("Your password is still set to the default. Please enter a new password:");
+
+        if (newPassword && newPassword.length >= 6) {
+            // Re-authenticate the user before updating the password
+            reauthenticateUser(user, currentPassword).then(() => {
+                // Update the password
+                user.updatePassword(newPassword).then(() => {
+                    alert("Password updated successfully!");
+
+                    // Store the new password in localStorage
+                    localStorage.setItem('password', newPassword);
+
+                    // Fetch student data now that the password is updated
+                    fetchStudentData();
+                }).catch((error) => {
+                    console.error("Error updating password:", error);
+                    alert("Failed to update the password. Please try again.");
+                });
+            }).catch((error) => {
+                console.error("Re-authentication failed:", error);
+                alert("Re-authentication failed. Please log in again.");
+                firebase.auth().signOut();
+                window.location.href = 'user.html'; // Redirect to login page
+            });
+        } else {
+            alert("Password must be at least 6 characters long.");
+        }
+    }
+
+    // Function to re-authenticate the user before updating password
+    function reauthenticateUser(user, currentPassword) {
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+        return user.reauthenticateWithCredential(credential);
+    }
+
+        function displayUserData() {
+            firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                db.ref('users/' + userId).once('value').then((snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        const teacherUID = userData.teacher;
+                        const className = userData.classJoined;
+                        document.getElementById('welcome-message').textContent = `Welcome, ${userData.name}!`;
+                        document.getElementById('user-name').textContent = `Name: ${userData.name}`;
+                        document.getElementById('user-email').textContent = `Email: ${userData.email}`;
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching user data:", error);
+                });
+            } else {
+                window.location.href = "user.html";
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', displayUserData);
+
+
+        // Handle sign out
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        firebase.auth().signOut().then(() => {
+
+            window.location.href = 'user.html';
+        });
+    });
+    </script>
+
+
+
+</body>
+</html>

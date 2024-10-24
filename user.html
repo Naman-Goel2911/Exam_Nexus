@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="user.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+</head>
+<body>
+
+    <div class="auth-container">
+        <!-- Login Form -->
+        <div id="login-section" class="auth-form active">
+            <h2><a href="index.html"><img src="assets/ExamNexus.png" style="height: 30px; margin-right: 10px;"></a>Login</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+
+                <div class="password-container">
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <i class="fa fa-eye-slash" id="toggle-login-password"></i>
+                </div>
+
+                <button type="submit">Login</button>
+                <p>Don't have an account? <span class="toggle-link" id="show-register">Create one</span></p>
+                <p><span class="toggle-link" id="show-reset-password">Forgot Password?</span></p>
+            </form>
+
+            <!-- Google Sign-In Button -->
+            <div class="google-signin">
+                <button id="google-signin-btn">
+                    <i class="fa-brands fa-google" style="margin-right: 10px;"></i>
+                    <span>Log in with Google</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-section" class="auth-form">
+            <h2>Create Account</h2>
+            <form id="register-form">
+                <input type="text" id="register-name" placeholder="Name" required>
+                <input type="email" id="register-email" placeholder="Email" required>
+
+                <div class="password-container">
+                    <input type="password" id="register-password" placeholder="Password" required>
+                    <i class="fa fa-eye-slash" id="toggle-register-password"></i>
+                </div>
+
+                <input type="text" id="register-org" placeholder="Organization">
+
+                <!-- Profession Dropdown -->
+                <select id="profession">
+                    <option value="">Select Profession</option>
+                    <option value="teacher">Teacher</option>
+                    <option value="student">Student</option>
+                </select>
+
+                <button type="submit">Register</button>
+                <p>Already have an account? <span class="toggle-link" id="show-login">Login here</span></p>
+            </form>
+        </div>
+
+        <!-- Password Reset Form -->
+        <div id="reset-password-section" class="auth-form">
+            <h2>Reset Password</h2>
+            <form id="reset-password-form">
+                <input type="email" id="reset-password-email" placeholder="Enter your email" required>
+                <button type="submit">Send Password Reset Email</button>
+                <p>Remember your password? <span class="toggle-link" id="show-login-from-reset">Login here</span></p>
+            </form>
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div id="message" class="message"></div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="user.js"></script>
+
+    <!-- Password Toggle Script -->
+    <script>
+        // Toggle Login Password Visibility
+        const loginPassword = document.getElementById('login-password');
+        const toggleLoginPassword = document.getElementById('toggle-login-password');
+        toggleLoginPassword.addEventListener('click', function () {
+            if (loginPassword.type === 'password') {
+                loginPassword.type = 'text';
+                toggleLoginPassword.classList.add('fa-eye');
+                toggleLoginPassword.classList.remove('fa-eye-slash');
+            } else {
+                loginPassword.type = 'password';
+                toggleLoginPassword.classList.add('fa-eye-slash');
+                toggleLoginPassword.classList.remove('fa-eye');
+            }
+        });
+
+        // Toggle Register Password Visibility
+        const registerPassword = document.getElementById('register-password');
+        const toggleRegisterPassword = document.getElementById('toggle-register-password');
+        toggleRegisterPassword.addEventListener('click', function () {
+            if (registerPassword.type === 'password') {
+                registerPassword.type = 'text';
+                toggleRegisterPassword.classList.add('fa-eye');
+                toggleRegisterPassword.classList.remove('fa-eye-slash');
+            } else {
+                registerPassword.type = 'password';
+                toggleRegisterPassword.classList.add('fa-eye-slash');
+                toggleRegisterPassword.classList.remove('fa-eye');
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Exam Nexus</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<style>
+    body {
+            background-image: url('assets/bg2.png');
+            background-size: cover;
+            background-position: center 100px;
+            background-repeat: no-repeat;
+        }
+    container{
+        font-family: 'Open Sans', sans-serif;
+        font-weight: 100;
+    }
+</style>
+<script>
+    function redirectToPage() {
+            window.location.href = "user.html";
+        }
+</script>
+<body>
+
+    <nav class="navbar navbar-expand-lg" style="font-family: 'Merriweather', serif;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <img src="assets/ExamNexus.png" alt="ExamNexus" width="60" height="auto">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="index.html">Home</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" href="about.html">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="faq.html">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contact.html">Contact Us</a>
+                    </li>
+                    <form class="d-flex" role="search">
+                        <button class="login-button" type="button" onclick="redirectToPage()" style="margin-right: 20px; margin-left: 690px;">
+                            <a href="user.html" style="color: inherit; text-decoration: none;">Sign In</a>
+                        </button>
+                    </form>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" id="about-section" style = "position: relative; top: 750px; font-family: 'Open Sans', sans-serif;">
+        <p style="margin-top: 50px; font-family: 'Open Sans', sans-serif;">
+            At Exam Nexus, we specialize in delivering a <b>comprehensive online examination platform</b> tailored for enterprises of all sizes. We aim to simplify and enhance the testing experience for educational institutions, helping them manage exams with ease and efficiency. We offer flexible pricing plans designed to cater to institutions ranging from small setups to large-scale organizations. Whether you're looking for a solution for 100 students or need unlimited capacity, we have you covered with options like our Starter, Standard, Premium, and fully customizable Enterprise plans. 
+        </p>
+        <p style="margin-bottom: 30px; font-family: 'Open Sans', sans-serif;"> 
+            Beyond exam management, we empower students with our <b>AI-driven analysis chatbot</b>, which helps them pinpoint mistakes and improve their performance. With robust features and dedicated support, Exam Nexus is the trusted partner for institutions aiming to deliver seamless, stress-free testing.
+        </p>
+        
+        <h2 style="font-family: 'Merriweather', serif;">Our Mission</h2>
+        <p style="margin-bottom: 30px; font-family: 'Open Sans', sans-serif;">Our mission is to <b>empower students</b> by allowing them to realize their mistakes and enhance their performance. Through our innovative AI-driven analysis chatbot, we provide insights that help students identify areas for improvement, ensuring they can learn from their experiences and achieve their academic goals.</p>
+
+        <h2 style="font-family: 'Merriweather', serif;">Our Values</h2>
+        <p style="margin-bottom: 30px; font-family: 'Open Sans', sans-serif;"><b>Integrity</b>, <b>innovation</b>, and <b>excellence</b> are at the core of everything we do. We believe in creating a supportive environment where institutions can thrive, and students can succeed.</p>
+
+        <h2 style="font-family: 'Merriweather', serif;">Join Us</h2>
+        <p style="margin-bottom: 40px; font-family: 'Open Sans', sans-serif;">Become part of the Exam Nexus community today and experience the difference our solutions can make in your educational journey!</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

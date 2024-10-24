@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Class</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="class.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="border-bottom: 5px solid white;" id="class-name">ClassName</h2>
+        <a onclick="showClassHome()"><i class="fa-solid fa-house"></i>Class Dashboard</a>
+        <a onclick="showStudentInfo()"><i class="fas fa-info-circle"></i> Student Info</a>
+        <a onclick="showsavedtest()"><i class="fa-solid fa-database"></i>Tests Created</a>
+        <a onclick="showTestCreation()"><i class="fas fa-plus"></i>Create a Test</a>
+        <a onclick="showTestTemplate()"><i class="fas fa-plus"></i>Test Templates</a>
+        <a href="teacher.html" id="user-message"></a>
+    </div>
+
+    <!-- Main content area -->
+    <div class="main-content">
+        
+        <!-- Student Info Section (initially hidden) -->
+        <div class="student-info">
+            <h2 style="display: flex; flex-direction: row; justify-content: space-between;">Student Details
+                <button  onclick="document.getElementById('csv-upload').click()">Upload Excel</button>
+                <input type="file" id="csv-upload" accept=".csv" style="display:none;" onchange="handleCSVUpload(event)">
+            </h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Student Email</th>
+                    </tr>
+                </thead>
+                <tbody id="students-body"></tbody>
+                <tr>
+                    <td><input style="width: 90%" type="text" id="student-name" placeholder="Enter student name" required></td>
+                    <td><input style="width: 90%" type="email" id="student-email" placeholder="Enter student email" required></td>
+                </tr>
+
+            </table>
+            <br>
+            <button onclick="addStudent()">Add Student</button>
+
+            <button onclick="saveClass()">Save Class</button>
+        </div>
+
+    </div>
+<script type="module">
+
+    const className = new URLSearchParams(window.location.search).get('className');
+    document.getElementById('class-name').textContent = className;
+
+    window.showStudentInfo = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `studentinfo.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showTestCreation = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testCreation.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showsavedtest = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testsaved.html?className=${encodeURIComponent(className)}`;
+    }
+
+    window.showClassHome = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+    }
+    
+    window.showTestTemplate = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testTemplate.html?className=${encodeURIComponent(className)}`;
+    }
+   
+    // Import necessary Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+        authDomain: "examnexus-4b46c.firebaseapp.com",
+        databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+        projectId: "examnexus-4b46c",
+        storageBucket: "examnexus-4b46c.appspot.com",
+        messagingSenderId: "889907228722",
+        appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+        measurementId: "G-35EV53YEE5"
+    };
+
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase();
+
+    // Student list
+    let students = [];
+    let student = []
+
+    // Redirect if user not logged in
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            window.location.href = 'user.html';
+        }
+    });
+
+    window.addStudent = function() {
+        const studentName = document.getElementById('student-name').value;
+        const studentEmail = document.getElementById('student-email').value;
+
+        if (studentName && studentEmail) {
+            student.push({ name: studentName, email: studentEmail});
+            updateStudentTable();
+            createStudentAccount(studentName, studentEmail);
+        } else {
+            alert("Please enter both name and email.");
+        }
+    };
+
+
+    // Update student table
+    function updateStudentTable() {
+        const tbody = document.getElementById('students-body');
+        tbody.innerHTML = '';
+        student.forEach(student => {
+            const row = `<tr><td>${student.name}</td><td>${student.email}</td></tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // Handle CSV upload (for Excel files)
+    window.handleCSVUpload = function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split('\n');
+                lines.forEach(line => {
+                    const [name, email] = line.split(',');
+                    if (name && email) {
+                        students.push({ name, email });
+                        createStudentAccount(email);
+                    }
+                });
+                updateStudentTable();
+            };
+            reader.readAsText(file);
+        }
+    };
+
+    window.saveClass = function() {
+        const className = document.getElementById('class-name').textContent;
+        if (!className || students.length === 0 ) {
+            alert("Please enter a class name and add at least one student.");
+            return;
+        }
+
+        const teacher = auth.currentUser;  // The teacher/admin
+        if (teacher) {
+            const classRef = ref(db, `users/${teacher.uid}/classes/${className}/students`);
+            
+            // Fetch the current students from Firebase
+            get(classRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const existingStudents = snapshot.val(); 
+                    students = [...existingStudents, ...students]; // Append new students to the existing list
+                }
+                
+                // Save the updated student list to Firebase
+                set(classRef, students)
+                    .then(() => {
+                        alert("Class saved successfully!");
+                    })
+                    .catch(err => {
+                        console.error("Error saving class: ", err);
+                    });
+            }).catch((error) => {
+                console.error("Error fetching existing students: ", error);
+            });
+        } else {
+            alert("You are not signed in.");
+        }
+    };
+
+
+    function createStudentAccount(name, email) {
+    const className = document.getElementById('class-name').textContent;
+    const teacherEmail = auth.currentUser.email; 
+    const teacherUID = auth.currentUser.uid;
+    const teacherPassword = localStorage.getItem('teacherPassword');  
+
+
+    createUserWithEmailAndPassword(auth, email, "ExamNexus1")
+        .then((userCredential) => {
+            const studentName = document.getElementById('student-name').value;
+            const studentEmail = document.getElementById('student-email').value;
+            const uid = userCredential.user.uid;  // Student UID
+            const userRef = ref(db, `users/${uid}`);
+            students.push({studentUID: uid ,name: studentName, email: studentEmail});
+
+            // Save student data
+            set(userRef, {
+                name: name,
+                email: email,
+                profession: 'student',
+                classJoined: className,
+                teacher: teacherUID
+            }).then(() => {
+                console.log(`Account and data saved for ${email}`);
+
+                // Log teacher back in after creating student
+                signInWithEmailAndPassword(auth, teacherEmail, teacherPassword)
+                    .then(() => {
+                        console.log("Teacher re-authenticated.");
+                    })
+                    .catch((error) => {
+                        console.error("Error logging teacher back in: ", error);
+                    });
+            }).catch((error) => {
+                console.error("Error saving student data: ", error);
+            });
+        })
+        .catch((err) => {
+            console.error("Error creating account: ", err);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const userId = user.uid;
+                const className = new URLSearchParams(window.location.search).get('className');
+
+                if (!className) {
+                    alert("No class selected.");
+                    window.location.href = "dashboard.html";  // Redirect if no class is selected
+                    return;
+                }
+
+                // Display the class name in the dialogue box
+                document.getElementById('class-name').textContent = className;
+
+                // Fetch students from the selected class
+                get(ref(db, 'users/' + userId + '/classes/' + className + '/students'))
+                    .then((snapshot) => {
+                        if (snapshot.exists()) {
+                            const students = snapshot.val();
+                            const studentTableBody = document.getElementById('students-body');
+                            students.forEach((student) => {
+                                const row = `<tr><td>${student.name}</td><td>${student.email}</td></tr>`;
+                                studentTableBody.innerHTML += row;
+                            });
+                        } else {
+                            console.log("No students found");
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error fetching student data:", error);
+                    });
+            } else {
+                window.location.href = 'user.html';  // Redirect to login if no user is signed in
+            }
+        });
+    });
+
+    function displayUserData() {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                const userRef = ref(db, 'users/' + userId); // Ensure you use the `db` reference
+
+                get(userRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        if (userData && userData.classes) {
+                            document.getElementById('user-message').innerHTML = `<i class="fa-solid fa-user"></i>Hi, ${userData.name}!`;
+                        } else {
+                            console.error("User data not found or no classes associated.");
+                        }
+                    } else {
+                        console.error("No user data available.");
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching user data:", error);
+                });
+            } else {
+                console.log("Not Signed In");
+                window.location.href = "user.html";
+            }
+        });
+    }
+
+document.addEventListener('DOMContentLoaded', displayUserData);
+
+
+
+</script>
+</body> 
+
+</html>

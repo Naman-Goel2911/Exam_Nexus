@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Test Creation Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="class.css">
+    <style>
+        td input {
+            width: 90%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .test-table {
+            margin-top: 20px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        .marks-header {
+            font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .marks-inputs input {
+            display: flex;
+            flex-direction: column;
+            margin-top: 30px;
+            width: 90%;
+            height: 10%;
+        }
+
+        .section-questions {
+            margin-top: 20px;
+        }
+
+        .marks-inputs {
+            margin-bottom: 25px;
+            width: 80%;
+        }
+
+        .marks-inputs input, .marks-inputs textarea, .marks-inputs select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s ease;
+        }
+
+        .marks-inputs input:focus, .marks-inputs textarea:focus, .marks-inputs select:focus {
+            border-color: #092742;
+            outline: none;
+            box-shadow: 0 0 5px rgba(48, 213, 200, 0.3);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="border-bottom: 5px solid white;" id="class-name">ClassName</h2>
+        <a onclick="showClassHome()"><i class="fa-solid fa-house"></i>Class Dashboard</a>
+        <a onclick="showStudentInfo()"><i class="fas fa-info-circle"></i> Student Info</a>
+        <a onclick="showsavedtest()"><i class="fa-solid fa-database"></i>Tests Created</a>
+        <a onclick="showTestCreation()"><i class="fas fa-plus"></i>Create a Test</a>
+        <a onclick="showTestTemplate()"><i class="fas fa-plus"></i>Test Templates</a>
+        <a href="teacher.html" id="user-message"></a>
+    </div>
+
+    <div class="main-content">
+        <h2>Create a New Test</h2>
+        <div class="input-group">
+            <h3>Test Title:</h3>
+            <input type="text" id="test-title" placeholder="Enter test title">
+        </div>
+        
+        <div class="input-group">
+            <h3>Subject:</h3>
+            <input type="text" id="subject" placeholder="Enter the subject of the test">
+        </div>
+
+        <div class="input-group">
+            <h3>Duration (hh:mm):</h3>
+            <input type="time" id="duration" placeholder="Enter the duration of the test">
+        </div>
+
+        <button class="start-test" onclick="startTest()">Start Test Creation</button>
+
+        <!-- Section to add sections and questions -->
+        <div id="section-section" style="display: none;">
+            <h2>Sections</h2>
+            <div id="section-list">
+                <!-- Sections will be added here dynamically -->
+            </div>
+            <button class="add-section" onclick="addNewSection()">Add New Section</button>
+            <button class="save-test" onclick="saveTestToDatabase()">Save</button>
+        </div>
+    </div>
+
+<script type="module">
+    window.showStudentInfo = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `studentinfo.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showTestCreation = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testCreation.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showsavedtest = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testsaved.html?className=${encodeURIComponent(className)}`;
+    }
+
+    window.showClassHome = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+    }
+
+    window.showTestTemplate = function () {
+        const className = document.getElementById('class-name').textContent;          
+        window.location.href = `testTemplate.html?className=${encodeURIComponent(className)}`;    
+    }
+
+    const className = new URLSearchParams(window.location.search).get('className');
+    document.getElementById('class-name').textContent = className;
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+        authDomain: "examnexus-4b46c.firebaseapp.com",
+        databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+        projectId: "examnexus-4b46c",
+        storageBucket: "examnexus-4b46c.appspot.com",
+        messagingSenderId: "889907228722",
+        appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+        measurementId: "G-35EV53YEE5"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase();
+    const auth = getAuth();
+
+    let sections = [];
+
+    window.startTest = function() {
+        const title = document.getElementById('test-title').value;
+        const subject = document.getElementById('subject').value;
+
+        if (!title || !subject) {
+            alert("Please enter both title and subject.");
+            return;
+        }
+
+        document.getElementById('section-section').style.display = 'block';  // Show section section
+        addNewSection();
+    }
+
+    window.addNewSection = function() {
+        const sectionList = document.getElementById('section-list');
+
+        const sectionDiv = document.createElement('div');
+        sectionDiv.classList.add('section');
+
+        const sectionHeader = document.createElement('div');
+        sectionHeader.classList.add('section-header');
+
+        const sectionName = document.createElement('h3');
+        sectionName.textContent = 'Enter Section Name Here';
+        sectionName.contentEditable = 'true';
+        sectionName.classList.add('section-name');
+        sectionHeader.appendChild(sectionName);
+        sectionDiv.appendChild(sectionHeader);
+
+        const marksHeader = document.createElement('h3');
+        marksHeader.classList.add('marks-header');
+        marksHeader.textContent = 'Set Marks for this Section';
+
+        const marksInputs = document.createElement('div');
+        marksInputs.classList.add('marks-inputs');
+
+        const positiveMarksLabel = document.createElement('label');
+        positiveMarksLabel.textContent = 'Positive Marks:';
+        const positiveMarksInput = document.createElement('input');
+        positiveMarksInput.type = 'number';
+        positiveMarksInput.placeholder = 'Marks for correct answer';
+        positiveMarksInput.id = `positive-marks-${sections.length}`;
+
+        const negativeMarksLabel = document.createElement('label');
+        negativeMarksLabel.textContent = 'Negative Marks:';
+        const negativeMarksInput = document.createElement('input');
+        negativeMarksInput.type = 'number';
+        negativeMarksInput.placeholder = 'Marks for wrong answer';
+        negativeMarksInput.id = `negative-marks-${sections.length}`;
+
+        marksInputs.appendChild(positiveMarksLabel);
+        marksInputs.appendChild(positiveMarksInput);
+        marksInputs.appendChild(negativeMarksLabel);
+        marksInputs.appendChild(negativeMarksInput);
+
+        sectionDiv.appendChild(marksHeader);
+        sectionDiv.appendChild(marksInputs);
+
+        const questionTypeSelector = `
+            <h3>Question Type</h3>
+            <select id="question-type-${sections.length}" onchange="changeQuestionType(${sections.length})">
+                <option value="single">Single-Choice Correct</option>
+                <option value="multi">Multi-Correct</option>
+                <option value="numerical">Numerical Value</option>
+                <option value="truefalse">True/False</option>
+            </select>
+        `;
+        sectionDiv.innerHTML += questionTypeSelector;
+
+        const questionsTable = createQuestionsTable(sections.length);
+        sectionDiv.appendChild(questionsTable);
+
+        const deleteSectionBtn = document.createElement('button');
+        deleteSectionBtn.textContent = 'Delete Section';
+        deleteSectionBtn.onclick = function() {
+            sectionDiv.remove();
+        };
+        sectionDiv.appendChild(deleteSectionBtn);
+
+        sectionList.appendChild(sectionDiv);
+
+        sections.push({
+            sectionName: sectionName,
+            positiveMarks: positiveMarksInput,
+            negativeMarks: negativeMarksInput,
+            questionsTable: questionsTable
+        });
+    }
+
+    function createQuestionsTable(sectionIndex) {
+        const tableDiv = document.createElement('div');
+        tableDiv.classList.add('section-questions');
+        
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Question</th>
+                    <th id="option-header-${sectionIndex}">Option 1</th>
+                    <th id="option-2-${sectionIndex}">Option 2</th>
+                    <th id="option-3-${sectionIndex}">Option 3</th>
+                    <th id="option-4-${sectionIndex}">Option 4</th>
+                    <th id="correct-answer-header-${sectionIndex}">Correct Answer</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        tableDiv.appendChild(table);
+
+        const addQuestionBtn = document.createElement('button');
+        addQuestionBtn.textContent = 'Add New Question';
+        addQuestionBtn.onclick = function() {
+            addNewRow(table.querySelector('tbody'), sectionIndex);
+        };
+        tableDiv.appendChild(addQuestionBtn);
+
+        return tableDiv;
+    }
+
+    function addNewRow(tbody, sectionIndex) {
+        const row = document.createElement('tr');
+
+        const questionCell = createInputCell("Enter question");
+        row.appendChild(questionCell);
+
+        for (let i = 1; i <= 4; i++) {
+            const optionCell = createInputCell(`Enter option ${i}`);
+            optionCell.classList.add(`option-${sectionIndex}`);
+            row.appendChild(optionCell);
+        }
+
+        const correctAnswerCell = document.createElement('td');
+        const correctAnswerSelect = document.createElement('select');
+        correctAnswerSelect.innerHTML = `
+            <option value="option1">Option 1</option>
+            <option value="option2">Option 2</option>
+            <option value="option3">Option 3</option>
+            <option value="option4">Option 4</option>
+        `;
+        correctAnswerCell.appendChild(correctAnswerSelect);
+        correctAnswerCell.classList.add(`correct-answer-${sectionIndex}`);
+        row.appendChild(correctAnswerCell);
+
+        const deleteBtnCell = document.createElement('td');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = function() {
+            row.remove();
+        };
+        deleteBtnCell.appendChild(deleteBtn);
+        row.appendChild(deleteBtnCell);
+
+        tbody.appendChild(row);
+    }
+
+    function createInputCell(placeholderText) {
+        const cell = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = placeholderText;
+        cell.appendChild(input);
+        return cell;
+    }
+
+    window.changeQuestionType = function (sectionIndex) {
+        const questionTypeElement = document.getElementById(`question-type-${sectionIndex}`);
+        const questionType = questionTypeElement.value;
+
+        // Find the section div based on section index
+        const sectionDiv = document.querySelectorAll('.section')[sectionIndex];
+        if (!sectionDiv) {
+            console.error(`Section ${sectionIndex} not found`);
+            return;
+        }
+
+        // Find all option cells and table headers for this section
+        const optionCells = sectionDiv.querySelectorAll(`.option-${sectionIndex}`);
+        const correctAnswerCell = sectionDiv.querySelector(`.correct-answer-${sectionIndex}`);
+        const correctAnswerHeader = sectionDiv.querySelector(`#correct-answer-header-${sectionIndex}`);
+        
+        const optionHeader1 = sectionDiv.querySelector(`#option-header-${sectionIndex}`);
+        const optionHeader2 = sectionDiv.querySelector(`#option-2-${sectionIndex}`);
+        const optionHeader3 = sectionDiv.querySelector(`#option-3-${sectionIndex}`);
+        const optionHeader4 = sectionDiv.querySelector(`#option-4-${sectionIndex}`);
+
+        if (!correctAnswerCell || optionCells.length === 0) {
+            console.error(`Elements for question type ${questionType} not found for section ${sectionIndex}`);
+            return;
+        }
+
+        // Update table headers and option cells based on the selected question type
+        if (questionType === 'numerical') {
+            // For numerical questions: Hide option headers, and update the correct answer field to numerical
+            [optionHeader1, optionHeader2, optionHeader3, optionHeader4].forEach(header => header.style.display = 'none');
+            optionCells.forEach(cell => cell.style.display = 'none');
+            correctAnswerHeader.textContent = 'Correct Answer (Numerical)';
+            correctAnswerCell.innerHTML = `<input type="text" placeholder="Enter numerical value">`;
+
+        } else if (questionType === 'truefalse') {
+            // For true/false questions: Hide option headers, and update the correct answer field to True/False dropdown
+            [optionHeader1, optionHeader2, optionHeader3, optionHeader4].forEach(header => header.style.display = 'none');
+            optionCells.forEach(cell => cell.style.display = 'none');
+            correctAnswerHeader.textContent = 'Correct Answer (True/False)';
+            correctAnswerCell.innerHTML = `
+                <select>
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                </select>`;
+
+        } else if (questionType === 'multi') {
+            // For multi-choice questions: Show all option headers and update correct answer to checkboxes
+            [optionHeader1, optionHeader2, optionHeader3, optionHeader4].forEach(header => header.style.display = 'table-cell');
+            optionCells.forEach(cell => cell.style.display = 'table-cell');
+            correctAnswerHeader.textContent = 'Correct Answer(s)';
+            correctAnswerCell.innerHTML = `
+                <input type="checkbox" value="option1"> Option 1<br>
+                <input type="checkbox" value="option2"> Option 2<br>
+                <input type="checkbox" value="option3"> Option 3<br>
+                <input type="checkbox" value="option4"> Option 4<br>`;
+
+        } else if (questionType === 'single') {
+            // For single-choice questions: Show all option headers and update correct answer to a dropdown
+            [optionHeader1, optionHeader2, optionHeader3, optionHeader4].forEach(header => header.style.display = 'table-cell');
+            optionCells.forEach(cell => cell.style.display = 'table-cell');
+            correctAnswerHeader.textContent = 'Correct Answer';
+            correctAnswerCell.innerHTML = `
+                <select>
+                    <option value="option1">Option 1</option>
+                    <option value="option2">Option 2</option>
+                    <option value="option3">Option 3</option>
+                    <option value="option4">Option 4</option>
+                </select>`;
+        }
+    };
+    
+    window.saveTestToDatabase = function() {
+        const title = document.getElementById('test-title').value;
+        const subject = document.getElementById('subject').value;
+        const duration = document.getElementById('duration').value;
+
+        if (!title || !subject || !duration) {
+            alert("Please fill in all the required fields: title, subject, and duration.");
+            return;
+        }
+
+        const testData = {
+            title: title,
+            subject: subject,
+            duration: duration,
+            sections: sections.map((section, sectionIndex) => {
+                // Get section name, marks, and question type
+                const sectionName = section.sectionName.textContent;
+                const positiveMarks = document.getElementById(`positive-marks-${sectionIndex}`).value; // Correct marks input
+                const negativeMarks = document.getElementById(`negative-marks-${sectionIndex}`).value; // Wrong marks input
+                const questionType = document.getElementById(`question-type-${sectionIndex}`).value; // Question type
+
+                // Ensure both positive and negative marks are valid numbers
+                if (!sectionName || isNaN(positiveMarks) || isNaN(negativeMarks) || !questionType) {
+                    console.error(`Invalid data in section ${sectionIndex}: Marks or Section Name is missing.`);
+                    return null;
+                }
+
+                const questions = [];
+                const rows = section.questionsTable.querySelector('tbody').querySelectorAll('tr');
+                rows.forEach((row, questionIndex) => {
+                    const questionText = row.cells[0].querySelector('input').value;
+                    let correctAnswer = '';
+                    const options = {};
+
+                    // Save options and correct answer based on question type
+                    if (questionType === 'single' || questionType === 'multi') {
+                        for (let i = 1; i <= 4; i++) {
+                            const option = row.cells[i].querySelector('input').value;
+                            if (option) options[i - 1] = option;
+                        }
+
+                        if (questionType === 'single') {
+                            correctAnswer = row.cells[5].querySelector('select').value;
+                        } else if (questionType === 'multi') {
+                            const checkboxes = row.cells[5].querySelectorAll('input[type="checkbox"]');
+                            correctAnswer = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+                        }
+                    } else if (questionType === 'numerical') {
+                        correctAnswer = row.cells[5].querySelector('input').value;
+                    } else if (questionType === 'truefalse') {
+                        correctAnswer = row.cells[5].querySelector('select').value;
+                    }
+
+                    // Validate question text and correct answer before pushing
+                    if (questionText && correctAnswer) {
+                        questions.push({
+                            question: questionText,
+                            options: options,
+                            correctAnswer: correctAnswer
+                        });
+                    } else {
+                        console.error(`Invalid question data in section ${sectionIndex}, question ${questionIndex}`);
+                    }
+                });
+
+                return {
+                    sectionName: sectionName,
+                    positiveMarks: parseFloat(positiveMarks), // Save marks as a number
+                    negativeMarks: parseFloat(negativeMarks), // Save marks as a number
+                    questionType: questionType,
+                    questions: questions
+                };
+            }).filter(section => section !== null) // Filter out invalid sections
+        };
+
+        const teacher = auth.currentUser;
+        const className = document.getElementById('class-name').textContent;
+
+        if (teacher && className) {
+            const newTestRef = ref(database, `users/${teacher.uid}/classes/${className}/tests/${title}/`);
+            set(newTestRef, testData)
+                .then(() => {
+                    alert('Test and sections saved successfully under the current class!');
+                    window.location.href = `editTest.html?className=${encodeURIComponent(className)}&testTitle=${encodeURIComponent(title)}`;
+                    clearAll();
+                })
+                .catch((error) => {
+                    alert('Error saving test: ' + error.message);
+                });
+        } else {
+            alert("You are not signed in or class name is missing.");
+        }
+    };
+
+
+    function clearAll() {
+        document.getElementById('test-title').value = '';
+        document.getElementById('subject').value = '';
+        document.getElementById('duration').value = '';
+        document.getElementById('section-list').innerHTML = '';
+        sections = [];
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        displayUserData();
+    });
+
+    function displayUserData() {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                const userRef = ref(database, 'users/' + userId);
+
+                get(userRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        document.getElementById('user-message').innerHTML = `<i class="fa-solid fa-user"></i>Hi, ${userData.name}!`;
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching user data:", error);
+                });
+            } else {
+                window.location.href = "user.html";
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

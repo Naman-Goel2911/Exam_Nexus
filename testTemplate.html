@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Template</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="class.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .test-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-card h3 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .test-card p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .test-card button {
+            background-color: #30D5C8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .test-card button:hover {
+            background-color: #28b4a4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2 style="border-bottom: 5px solid white;" id="class-name">ClassName</h2>
+        <a onclick="showClassHome()"><i class="fa-solid fa-house"></i>Class Dashboard</a>
+        <a onclick="showStudentInfo()"><i class="fas fa-info-circle"></i> Student Info</a>
+        <a onclick="showsavedtest()"><i class="fa-solid fa-database"></i>Tests Created</a>
+        <a onclick="showTestCreation()"><i class="fas fa-plus"></i>Create a Test</a>
+        <a onclick="showTestTemplate()"><i class="fas fa-plus"></i>Test Templates</a>
+        <a href="teacher.html" id="user-message"></a>
+    </div>
+    <div class="main-content">
+        <h2>Available Test Templates</h2>
+
+        <div id="test-cards-container"></div>
+    </div>
+
+    <script type="module">
+        window.showStudentInfo = function() {
+            const className = document.getElementById('class-name').textContent;
+            window.location.href = `studentinfo.html?className=${encodeURIComponent(className)}`;
+        };
+
+        window.showTestTemplate = function () {
+            const className = document.getElementById('class-name').textContent;
+            window.location.href = `testTemplate.html?className=${encodeURIComponent(className)}`;
+        }
+
+        window.showTestCreation = function() {
+            const className = document.getElementById('class-name').textContent;
+            window.location.href = `testCreation.html?className=${encodeURIComponent(className)}`;
+        };
+
+        window.showsavedtest = function () {
+            const className = document.getElementById('class-name').textContent;
+            window.location.href = `testsaved.html?className=${encodeURIComponent(className)}`;
+        }
+
+        window.showClassHome = function () {
+            const className = document.getElementById('class-name').textContent;
+            window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+        }
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+            authDomain: "examnexus-4b46c.firebaseapp.com",
+            databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+            projectId: "examnexus-4b46c",
+            storageBucket: "examnexus-4b46c.appspot.com",
+            messagingSenderId: "889907228722",
+            appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+            measurementId: "G-35EV53YEE5"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getDatabase();
+
+        const className = new URLSearchParams(window.location.search).get('className');
+        document.getElementById('class-name').textContent = className;
+        document.title = `Test Templates for ${className}`;
+
+        // Example Test Data (replace this with dynamic data if needed)
+        const tests = {
+            "English Test": {
+                name: "Class 1 English Test (Reading & Vocabulary)",
+                duration: 30,
+                subject: "English",
+                title: "Basic Reading and Vocabulary Skills",
+                sections: [
+                    {
+                        sectionName: "Multiple Choice Questions - Vocabulary",
+                        negativeMarks: 0,
+                        positiveMarks: 1,
+                        questionType: "single",
+                        questions: [
+                            {
+                                question: "Which of the following is a pet animal?",
+                                options: ["Dog", "Cat", "Fish", "Bird"],
+                                correctAnswer: 1
+                            }
+                        ]
+                    }
+                ]
+            },
+            "Math Test": {
+                name: "Class 1 Mathematics Test (Basic Operations)",
+                duration: 30,
+                subject: "Mathematics",
+                title: "Basic Operations",
+                sections: [
+                    {
+                        sectionName: "Multiple Choice Questions - Basic Operations",
+                        negativeMarks: 0,
+                        positiveMarks: 1,
+                        questionType: "single",
+                        questions: [
+                            {
+                                question: "What is 2 + 1?",
+                                options: ["5", "4", "3", "2"],
+                                correctAnswer: 2
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // Display Test Cards
+        function displayTestCards(tests) {
+            const testCardsContainer = document.getElementById('test-cards-container');
+            testCardsContainer.innerHTML = ''; 
+
+            Object.keys(tests).forEach(testTitle => {
+                const test = tests[testTitle];
+                const testCard = document.createElement('div');
+                testCard.classList.add('test-card');
+                testCard.innerHTML = `
+                    <h3>${test.title}</h3>
+                    <p>Subject: ${test.subject}</p>
+                    <button onclick="addTestToFirebase('${testTitle}')">Add Test</button>
+                `;
+                testCardsContainer.appendChild(testCard);
+            });
+        }
+
+        displayTestCards(tests);
+
+        // Add selected test to Firebase
+        window.addTestToFirebase = function(testTitle) {
+            const selectedTest = tests[testTitle];
+
+            // Ensure user is authenticated
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const teacher = auth.currentUser;
+                    const testsRef = ref(db, `users/${teacher.uid}/classes/${className}/tests/${selectedTest.title}`);
+
+                    // Add test to Firebase
+                    set(testsRef, selectedTest).then(() => {
+                        // Redirect to editTest.html
+                        window.location.href = `editTest.html?className=${encodeURIComponent(className)}&testTitle=${encodeURIComponent(selectedTest.title)}`;
+                    }).catch((error) => {
+                        console.error("Error adding test:", error);
+                    });
+                } else {
+                    alert("User is not authenticated");
+                }
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+        displayUserData();
+    });
+
+    function displayUserData() {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                const userRef = ref(db, 'users/' + userId);
+
+                get(userRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        document.getElementById('user-message').innerHTML = `<i class="fa-solid fa-user"></i>Hi, ${userData.name}!`;
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching user data:", error);
+                });
+            } else {
+                window.location.href = "user.html";
+            }
+        });
+    }
+    </script>
+</body>
+</html>

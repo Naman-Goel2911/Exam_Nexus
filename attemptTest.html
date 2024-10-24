@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attempt Test</title>
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #092742;
+        }
+
+        .section-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .section-tab {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .section-tab.active {
+            background-color: #092742;
+            color: white;
+        }
+
+        .question-container {
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button {
+            background-color: #092742;
+            color: #ffffff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #28b4a4;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 250px;
+            height: 100%;
+            background-color: #092742;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .sidebar h3, .sidebar p {
+            text-align: center;
+            color: white;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            max-height: 60%;
+            overflow-y: auto;
+        }
+
+        .sidebar ul li {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #444;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .sidebar ul li.attempted {
+            background-color: green;
+        }
+
+        .sidebar ul li.not-attempted {
+            background-color: red;
+        }
+
+        .timer {
+            font-size: 20px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .submit-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Result Table Styles */
+        .result-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-container h3 {
+            text-align: center;
+            color: #092742;
+        }
+
+        .result-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .result-container table, .result-container th, .result-container td {
+            border: 1px solid #ddd;
+        }
+
+        .result-container th, .result-container td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        .result-container th {
+            background-color: #092742;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="test-title">Test Title</h2>
+
+    <div class="section-tabs" id="section-tabs"></div>
+
+    <div id="question-container" class="question-container"></div>
+
+    <div class="controls">
+        <button id="previous-btn">Previous</button>
+        <button id="next-btn">Save & Next</button>
+        <button id="mark-review-btn">Mark for Review</button>
+    </div>
+</div>
+
+<div class="sidebar">
+    <h3 id="student-name">Student Name</h3>
+    <ul id="progress-tracker"></ul>
+    <div class="timer" id="test-timer">Time Left: 00:00</div>
+
+    <div class="submit-container">
+        <button id="submit-btn">Submit Test</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+        authDomain: "examnexus-4b46c.firebaseapp.com",
+        databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+        projectId: "examnexus-4b46c",
+        storageBucket: "examnexus-4b46c.appspot.com",
+        messagingSenderId: "889907228722",
+        appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+        measurementId: "G-35EV53YEE5"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase();
+
+    // Extract URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const teacherUID = urlParams.get('teacherUID');
+    const className = urlParams.get('className');
+    const testTitle = urlParams.get('testTitle');
+
+    let currentSectionIndex = 0;
+    let currentQuestionIndex = 0;
+    let studentAnswers = {};  // Stores student answers for each section and question
+    let totalQuestions = 0;
+    let attemptedQuestions = 0;
+    let testDuration;
+    let sections = [];
+    let timerInterval;
+
+    // Fetch test and student data
+    function fetchTestAndStudentData() {
+        const userId = auth.currentUser.uid;
+
+        // Fetch the student name
+        const studentRef = ref(db, `users/${userId}`);
+        get(studentRef).then((snapshot) => {
+            const studentData = snapshot.val();
+            if (studentData && studentData.name) {
+                document.getElementById('student-name').textContent = `Student: ${studentData.name}`;
+            } else {
+                document.getElementById('student-name').textContent = `Student: Unknown`;
+            }
+        }).catch((error) => {
+            console.error('Error fetching student data:', error);
+        });
+
+        // Fetch test data
+        const testRef = ref(db, `users/${teacherUID}/classes/${className}/tests/${testTitle}`);
+        get(testRef).then((snapshot) => {
+            const testData = snapshot.val();
+            if (testData) {
+                document.getElementById('test-title').textContent = testData.title;
+                testDuration = testData.duration; // Expected format: "HH:MM:SS"
+                sections = testData.sections;
+                initializeStudentAnswers();
+                initializeTimer(testDuration);
+                displaySections();
+                displayQuestion(currentSectionIndex, currentQuestionIndex);
+            } else {
+                alert('Test data not found!');
+            }
+        }).catch((error) => {
+            console.error('Error fetching test data:', error);
+        });
+    }
+
+    // Initialize studentAnswers structure
+    function initializeStudentAnswers() {
+        sections.forEach((section, sIndex) => {
+            studentAnswers[`section${sIndex + 1}`] = {};
+            section.questions.forEach((question, qIndex) => {
+                studentAnswers[`section${sIndex + 1}`][`question${qIndex + 1}`] = null;
+                totalQuestions++;
+            });
+        });
+        updateProgressTracker();
+    }
+
+    // Display section tabs
+    function displaySections() {
+        const sectionTabs = document.getElementById('section-tabs');
+        sectionTabs.innerHTML = '';
+
+        sections.forEach((section, index) => {
+            const tab = document.createElement('div');
+            tab.classList.add('section-tab');
+            tab.textContent = `Section ${index + 1}`;
+            tab.onclick = () => {
+                currentSectionIndex = index;
+                currentQuestionIndex = 0;
+                displayQuestion(currentSectionIndex, currentQuestionIndex);
+                updateActiveTab();
+            };
+
+            if (index === 0) tab.classList.add('active');
+            sectionTabs.appendChild(tab);
+        });
+    }
+
+    // Update active section tab
+    function updateActiveTab() {
+        const sectionTabs = document.querySelectorAll('.section-tab');
+        sectionTabs.forEach((tab, index) => {
+            if (index === currentSectionIndex) {
+                tab.classList.add('active');
+                tab.style.backgroundColor = "#092742";
+                tab.style.color = "white";
+            } else {
+                tab.classList.remove('active');
+                tab.style.backgroundColor = "#f4f4f4";
+                tab.style.color = "black";
+            }
+        });
+    }
+
+    // Display current question
+    function displayQuestion(sectionIndex, questionIndex) {
+        const questionContainer = document.getElementById('question-container');
+        const section = sections[sectionIndex];
+        const question = section.questions[questionIndex];
+
+        let optionsHTML = '';
+        if (section.questionType === 'single') {
+            optionsHTML = question.options.map((option, i) => `
+                <label><input type="radio" name="answer" value="option${i + 1}" ${getSelectedSingleAnswer(sectionIndex, questionIndex) === `option${i + 1}` ? 'checked' : ''}/> ${option}</label><br/>
+            `).join('');
+        } else if (section.questionType === 'multi') {
+            const selectedAnswers = getSelectedMultiAnswers(sectionIndex, questionIndex);
+            optionsHTML = question.options.map((option, i) => `
+                <label><input type="checkbox" name="answer" value="option${i + 1}" ${selectedAnswers.includes(`option${i + 1}`) ? 'checked' : ''}/> ${option}</label><br/>
+            `).join('');
+        } else if (section.questionType === 'numerical') {
+            const numericalAnswer = getSelectedNumericalAnswer(sectionIndex, questionIndex);
+            optionsHTML = `<label>Answer: <input type="number" step="any" id="numerical-answer" value="${numericalAnswer !== null ? numericalAnswer : ''}" /></label>`;
+        }
+
+        questionContainer.innerHTML = `
+            <h3>Question ${questionIndex + 1}</h3>
+            <p>${question.question}</p>
+            <div>${optionsHTML}</div>
+        `;
+    }
+
+    // Retrieve selected single answer
+    function getSelectedSingleAnswer(sectionIndex, questionIndex) {
+        const answer = studentAnswers[`section${sectionIndex + 1}`][`question${questionIndex + 1}`];
+        return answer !== null ? answer : '';
+    }
+
+    // Retrieve selected multiple answers
+    function getSelectedMultiAnswers(sectionIndex, questionIndex) {
+        const answer = studentAnswers[`section${sectionIndex + 1}`][`question${questionIndex + 1}`];
+        return Array.isArray(answer) ? answer : [];
+    }
+
+    // Retrieve selected numerical answer
+    function getSelectedNumericalAnswer(sectionIndex, questionIndex) {
+        const answer = studentAnswers[`section${sectionIndex + 1}`][`question${questionIndex + 1}`];
+        return answer !== null ? answer : null;
+    }
+
+    // Save current answer
+    function saveAnswer() {
+        const section = sections[currentSectionIndex];
+        const question = section.questions[currentQuestionIndex];
+        const sectionKey = `section${currentSectionIndex + 1}`;
+        const questionKey = `question${currentQuestionIndex + 1}`;
+
+        let answer = null;
+        if (section.questionType === 'single') {
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (selectedOption) answer = selectedOption.value;
+        } else if (section.questionType === 'multi') {
+            const selectedOptions = Array.from(document.querySelectorAll('input[name="answer"]:checked')).map(el => el.value);
+            if (selectedOptions.length > 0) answer = selectedOptions;
+        } else if (section.questionType === 'numerical') {
+            const numericalInput = document.getElementById('numerical-answer');
+            if (numericalInput && numericalInput.value.trim() !== "") {
+                answer = numericalInput.value.trim();
+            }
+        }
+
+        if (answer !== null) {
+            studentAnswers[sectionKey][questionKey] = answer;
+            markQuestionAsAttempted(currentSectionIndex, currentQuestionIndex);
+        }
+    }
+
+    // Mark question as attempted
+    function markQuestionAsAttempted(sectionIndex, questionIndex) {
+        const progressItems = document.getElementById('progress-tracker').querySelectorAll('li');
+        const totalSections = sections.length;
+        let itemIndex = 0;
+
+        for (let s = 0; s < totalSections; s++) {
+            const questionsInSection = sections[s].questions.length;
+            for (let q = 0; q < questionsInSection; q++) {
+                if (s === sectionIndex && q === questionIndex) {
+                    break;
+                }
+                itemIndex++;
+            }
+            if (s === sectionIndex) break;
+        }
+
+        const progressItemsTotal = document.getElementById('progress-tracker').querySelectorAll('li').length;
+        if (itemIndex < progressItemsTotal) {
+            const progressItem = progressItems[itemIndex];
+            if (progressItem && !progressItem.classList.contains('attempted')) {
+                progressItem.classList.remove('not-attempted');
+                progressItem.classList.add('attempted');
+                attemptedQuestions++;
+            }
+        }
+    }
+
+    // Update progress tracker
+    function updateProgressTracker() {
+        const progressTracker = document.getElementById('progress-tracker');
+        progressTracker.innerHTML = '';
+
+        sections.forEach((section, sIndex) => {
+            section.questions.forEach((question, qIndex) => {
+                const progressItem = document.createElement('li');
+                progressItem.textContent = `Q${qIndex + 1}`;
+                progressItem.classList.add('not-attempted');
+                progressTracker.appendChild(progressItem);
+            });
+        });
+    }
+
+    // Handle next and previous navigation
+    document.getElementById('next-btn').addEventListener('click', () => {
+        saveAnswer();
+        const previousSectionIndex = currentSectionIndex;
+
+        if (currentQuestionIndex < sections[currentSectionIndex].questions.length - 1) {
+            currentQuestionIndex++;
+        } else if (currentSectionIndex < sections.length - 1) {
+            currentSectionIndex++;
+            currentQuestionIndex = 0;
+        } else {
+            // Last question of the last section
+            alert('You have reached the end of the test.');
+            return;
+        }
+
+        // If section changes, update active tab
+        if (previousSectionIndex !== currentSectionIndex) {
+            updateActiveTab();
+        }
+
+        displayQuestion(currentSectionIndex, currentQuestionIndex);
+    });
+
+    document.getElementById('previous-btn').addEventListener('click', () => {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+        } else if (currentSectionIndex > 0) {
+            currentSectionIndex--;
+            currentQuestionIndex = sections[currentSectionIndex].questions.length - 1;
+        } else {
+            alert('You are at the beginning of the test.');
+            return;
+        }
+        updateActiveTab();
+        displayQuestion(currentSectionIndex, currentQuestionIndex);
+    });
+
+    // Handle mark for review (Feature Placeholder)
+    document.getElementById('mark-review-btn').addEventListener('click', () => {
+        alert('Feature to mark for review is not implemented yet.');
+        // You can implement a similar logic to highlight questions for review
+    });
+
+    // Initialize timer
+    function initializeTimer(duration) {
+        const timerDisplay = document.getElementById('test-timer');
+        
+        // Split duration into hours and minutes, ignoring seconds if any
+        const [hours, minutes] = duration.split(':').map(Number);
+        let timeLeft = (hours * 3600) + (minutes * 60); // Convert to total seconds
+
+        // Start the timer
+        timerInterval = setInterval(() => {
+            const hrs = Math.floor(timeLeft / 3600);
+            const mins = Math.floor((timeLeft % 3600) / 60);
+            const secs = timeLeft % 60;
+
+            // Update the timer display
+            timerDisplay.textContent = `Time Left: ${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            timeLeft--;
+
+            // When time is up
+            if (timeLeft < 0) {
+                clearInterval(timerInterval);
+                alert('Time is up! Submitting test...');
+                submitTest();
+            }
+        }, 1000); // Update every second
+    }
+    const testRef = ref(db, `users/${teacherUID}/classes/${className}/tests/${testTitle}`);
+    get(testRef).then((snapshot) => {
+        const testData = snapshot.val();
+        if (testData) {
+            // Ensure the test duration is available and valid
+            testDuration = testData.duration || "00:00"; // Fallback to zero if not set
+            sections = testData.sections;
+            initializeTimer(testDuration);  // Call initializeTimer with the duration
+            displaySections();
+            displayQuestion(currentSectionIndex, currentQuestionIndex);
+        }
+    });
+
+
+    // Submit Test
+    document.getElementById('submit-btn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to submit the test?')) {
+            submitTest();
+        }
+    });
+
+    // Submit Test Function
+    function submitTest() {
+        clearInterval(timerInterval);
+        saveAnswer(); // Save the last answer
+
+        const userId = auth.currentUser.uid; // Student's UID
+        const testRef = ref(db, `users/${teacherUID}/classes/${className}/tests/${testTitle}`);
+        const studentRef = ref(db, `users/${userId}/classes/${className}/tests/${testTitle}`);
+
+        get(testRef).then((snapshot) => {
+            const testData = snapshot.val();
+            if (!testData) {
+                alert('Test data not found!');
+                return;
+            }
+
+            let totalMarks = 0;
+            let calculatedAttemptedQuestions = 0;
+
+            sections.forEach((section, sIndex) => {
+                const sectionKey = `section${sIndex + 1}`;
+                section.questions.forEach((question, qIndex) => {
+                    const questionKey = `question${qIndex + 1}`;
+                    const studentAnswer = studentAnswers[sectionKey][questionKey];
+                    const correctAnswer = question.correctAnswer;
+                    const positiveMarks = section.positiveMarks;
+                    const negativeMarks = section.negativeMarks;
+
+                    if (studentAnswer !== null) {
+                        calculatedAttemptedQuestions++;
+                        if (section.questionType === 'multi') {
+                            const sortedStudent = [...studentAnswer].sort();
+                            const sortedCorrect = [...correctAnswer].sort();
+                            const isCorrect = JSON.stringify(sortedStudent) === JSON.stringify(sortedCorrect);
+                            if (isCorrect) {
+                                totalMarks += positiveMarks;
+                            } else {
+                                totalMarks -= negativeMarks;
+                            }
+                        } else if (section.questionType === 'numerical') {
+                            const studentNum = parseFloat(studentAnswer);
+                            const correctNum = parseFloat(correctAnswer);
+                            if (Math.abs(studentNum - correctNum) < 0.01) {
+                                totalMarks += positiveMarks;
+                            } else {
+                                totalMarks -= negativeMarks;
+                            }
+                        } else {
+                            if (studentAnswer === correctAnswer) {
+                                totalMarks += positiveMarks;
+                            } else {
+                                totalMarks -= negativeMarks;
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Save the student's attempt in their own node
+            set(studentRef, {
+                testTitle: testData.title,
+                studentAnswers: studentAnswers,
+                attemptedQuestions: calculatedAttemptedQuestions,
+                totalQuestions: totalQuestions,
+                totalMarks: totalMarks,
+                submittedAt: new Date().toISOString()
+            }).then(() => {
+                displayResults(totalQuestions, calculatedAttemptedQuestions, totalMarks);
+            }).catch((error) => {
+                console.error('Error submitting test:', error);
+            });
+
+            // Also save the marks under the teacher's test node
+            const teacherTestRef = ref(db, `users/${teacherUID}/classes/${className}/tests/${testTitle}/marks/${userId}`);
+            set(teacherTestRef, {
+                studentUID: userId,
+                totalMarks: totalMarks,
+                submittedAt: new Date().toISOString()
+            }).then(() => {
+                console.log('Marks saved successfully under teacher\'s node.');
+            }).catch((error) => {
+                console.error('Error saving marks under teacher node:', error);
+            });
+
+        }).catch((error) => {
+            console.error('Error fetching test data for submission:', error);
+        });
+    }
+
+
+    // Display results in table format
+    function displayResults(totalQuestions, attemptedQuestions, totalMarks) {
+        const resultContainer = document.createElement('div');
+        resultContainer.classList.add('result-container');
+        resultContainer.innerHTML = `
+            <h3>Test Results</h3>
+            <table>
+                <tr>
+                    <th>Total Questions</th>
+                    <th>Attempted</th>
+                    <th>Not Attempted</th>
+                    <th>Marks Scored</th>
+                </tr>
+                <tr>
+                    <td>${totalQuestions}</td>
+                    <td>${attemptedQuestions}</td>
+                    <td>${totalQuestions - attemptedQuestions}</td>
+                    <td>${totalMarks}</td>
+                </tr>
+            </table>
+        `;
+
+        // Replace the current content with the result table
+        document.body.innerHTML = '';
+        document.body.appendChild(resultContainer);
+    }
+
+    // Initialize Firebase Authentication State Listener
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            fetchTestAndStudentData();
+        } else {
+            window.location.href = 'user.html';  // Redirect to login if not authenticated
+        }
+    });
+
+</script>
+
+</body>
+</html>

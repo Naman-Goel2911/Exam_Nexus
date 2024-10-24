@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="class.css">
+    <style>
+        td input, td textarea {
+            width: 90%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .test-table {
+            margin-top: 20px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .marks-header {
+            font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .marks-inputs input {
+            display: flex;
+            flex-direction: column;
+            margin-top: 30px;
+            width: 90%;
+            height: 10%;
+        }
+
+        .section-questions {
+            margin-top: 20px;
+        }
+
+        .marks-inputs {
+            margin-bottom: 25px;
+            width: 80%;
+        }
+
+        .marks-inputs input, .marks-inputs textarea, .marks-inputs select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s ease;
+        }
+
+        .marks-inputs input:focus, .marks-inputs textarea:focus, .marks-inputs select:focus {
+            border-color: #092742;
+            outline: none;
+            box-shadow: 0 0 5px rgba(48, 213, 200, 0.3);
+        }
+
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="border-bottom: 5px solid white;" id="class-name">ClassName</h2>
+        <a onclick="showClassHome()"><i class="fa-solid fa-house"></i>Class Dashboard</a>
+        <a onclick="showStudentInfo()"><i class="fas fa-info-circle"></i> Student Info</a>
+        <a onclick="showsavedtest()"><i class="fa-solid fa-database"></i>Tests Created</a>
+        <a onclick="showTestCreation()"><i class="fas fa-plus"></i>Create a Test</a>
+        <a onclick="showTestTemplate()"><i class="fas fa-plus"></i>Test Templates</a>
+        <a href="teacher.html" id="user-message"></a>
+    </div>
+
+    <div class="main-content">
+        <h2>Edit Test</h2>
+        <div class="input-group">
+            <h3>Test Title:</h3>
+            <input type="text" id="edit-test-title" placeholder="Enter test title">
+        </div>
+
+        <div class="input-group">
+            <h3>Subject:</h3>
+            <input type="text" id="edit-subject" placeholder="Enter the subject of the test">
+        </div>
+
+        <div class="input-group">
+            <h3>Duration:</h3>
+            <input type="time" id="edit-duration" placeholder="Enter the duration of the test">
+        </div>
+
+        <div id="edit-section-list">
+            <!-- Sections and questions will be added here dynamically -->
+        </div>
+
+        <button id="add-new-section">Add New Section</button>
+        <button class="save-updated-test" id="save-updated-test">Save Test</button>
+    </div>
+
+    <script type="module">
+        const className = new URLSearchParams(window.location.search).get('className');
+        const testTitle = new URLSearchParams(window.location.search).get('testTitle');
+        document.getElementById('class-name').textContent = className;
+
+        window.showStudentInfo = function() {
+            window.location.href = `studentinfo.html?className=${encodeURIComponent(className)}`;
+        };
+        window.showTestCreation = function() {
+            window.location.href = `testCreation.html?className=${encodeURIComponent(className)}`;
+        };
+        window.showsavedtest = function () {
+            window.location.href = `testsaved.html?className=${encodeURIComponent(className)}`;
+        };
+        window.showClassHome = function () {
+            window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+        };
+
+        window.showTestTemplate = function () {
+            const className = document.getElementById('class-name').textContent;
+            window.location.href = `testTemplate.html?className=${encodeURIComponent(className)}`;
+        }
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+            authDomain: "examnexus-4b46c.firebaseapp.com",
+            databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+            projectId: "examnexus-4b46c",
+            storageBucket: "examnexus-4b46c.appspot.com",
+            messagingSenderId: "889907228722",
+            appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+            measurementId: "G-35EV53YEE5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getDatabase();
+
+        let sections = [];
+
+        window.editTest = function() {
+            onAuthStateChanged(auth, (user) => {
+                const testRef = ref(db, `users/${user.uid}/classes/${className}/tests/${testTitle}/`);
+                get(testRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const test = snapshot.val();
+                        document.getElementById('edit-test-title').value = test.title;
+                        document.getElementById('edit-subject').value = test.subject;
+                        document.getElementById('edit-duration').value = test.duration;
+
+                        sections = test.sections || [];
+                        displayEditSections();
+                    } else {
+                        console.log("Test not found");
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching test:", error);
+                });
+            });
+        }
+
+        function displayEditSections() {
+            const sectionList = document.getElementById('edit-section-list');
+            sectionList.innerHTML = '';
+
+            sections.forEach((section, sectionIndex) => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.classList.add('section');
+
+                const sectionHeaderDiv = document.createElement('div');
+                sectionHeaderDiv.classList.add('section-header');
+
+                const sectionHeader = document.createElement('h2');
+                sectionHeader.contentEditable = true;
+                sectionHeader.textContent = section.sectionName;
+
+                const deleteSectionBtn = document.createElement('button');
+                deleteSectionBtn.textContent = 'Delete Section';
+                deleteSectionBtn.onclick = function() {
+                    deleteSection(sectionIndex);  
+                };
+
+                sectionHeaderDiv.appendChild(sectionHeader);
+                sectionHeaderDiv.appendChild(deleteSectionBtn);
+                sectionDiv.appendChild(sectionHeaderDiv);
+
+                const questionTypeSelector = `
+                    <h3>Question Type</h3>
+                    <select id="question-type-${sectionIndex}" onchange="changeQuestionType(${sectionIndex})">
+                        <option value="single" ${section.questionType === 'single' ? 'selected' : ''}>Single-Choice Correct</option>
+                        <option value="multi" ${section.questionType === 'multi' ? 'selected' : ''}>Multi-Correct</option>
+                        <option value="numerical" ${section.questionType === 'numerical' ? 'selected' : ''}>Numerical Value</option>
+                        <option value="truefalse" ${section.questionType === 'truefalse' ? 'selected' : ''}>True/False</option>
+                    </select>
+                `;
+                sectionDiv.innerHTML += questionTypeSelector;
+
+                const marksInputs = `
+                    <h3 class="marks-header">Set Marks for this Section</h3>
+                    <div class="marks-inputs">
+                        <input type="number" id="edit-positive-marks-${sectionIndex}" value="${section.positiveMarks}" placeholder="Marks for correct answer">
+                        <input type="number" id="edit-negative-marks-${sectionIndex}" value="${section.negativeMarks}" placeholder="Marks for wrong answer">
+                    </div>
+                `;
+
+                sectionDiv.innerHTML += marksInputs;
+
+                // Ensure you have the questions before creating the table
+                const questionsTable = createQuestionsTable(section.questions || [], sectionIndex);
+                sectionDiv.appendChild(questionsTable);
+
+                sectionList.appendChild(sectionDiv);
+            });
+        }
+
+        function addQuestionRow(tbody, sectionIndex, questionIndex, question) {
+            const row = document.createElement('tr');
+
+            // Fetch the question type based on the sectionIndex
+            const questionTypeElement = document.getElementById(`question-type-${sectionIndex}`);
+            const questionType = questionTypeElement ? questionTypeElement.value : '';
+
+            row.innerHTML = `
+                <td><textarea rows="2" id="edit-question-${sectionIndex}-${questionIndex}">${question.question}</textarea></td>
+                <td id="options-${sectionIndex}-${questionIndex}">${renderOptions(question, questionType, sectionIndex, questionIndex)}</td>
+                <td id="correct-answer-${sectionIndex}-${questionIndex}">${renderCorrectAnswer(question, questionType, sectionIndex, questionIndex)}</td>
+                <td><button onclick="deleteQuestion(${sectionIndex}, ${questionIndex})">Delete</button></td>
+            `;
+            tbody.appendChild(row);
+        }
+
+        function renderOptions(question, questionType, sectionIndex, questionIndex) {
+            if (questionType === 'numerical' || questionType === 'truefalse') {
+                return ''; // No options for numerical or true/false
+            }
+
+            let optionsHtml = '';
+            for (let i = 0; i < 4; i++) {
+                optionsHtml += `
+                    <input type="text" id="edit-option-${sectionIndex}-${questionIndex}-${i}" value="${question.options[i] || ''}" placeholder="Option ${i + 1}">
+                `;
+            }
+            return optionsHtml;
+        }
+
+        function renderCorrectAnswer(question, questionType, sectionIndex, questionIndex) {
+            if (questionType === 'numerical') {
+                return `<input type="text" id="edit-numerical-correct-answer-${sectionIndex}-${questionIndex}" value="${question.correctAnswer || ''}" placeholder="Correct Answer">`;
+            } else if (questionType === 'truefalse') {
+                return `
+                    <select id="edit-correct-answer-${sectionIndex}-${questionIndex}">
+                        <option value="true" ${question.correctAnswer === 'true' ? 'selected' : ''}>True</option>
+                        <option value="false" ${question.correctAnswer === 'false' ? 'selected' : ''}>False</option>
+                    </select>
+                `;
+            }
+
+            let correctAnswerHtml = '';
+            if (questionType === 'single') {
+                correctAnswerHtml = `
+                    <select id="edit-correct-answer-${sectionIndex}-${questionIndex}">
+                        <option value="option1" ${question.correctAnswer === 'option1' ? 'selected' : ''}>Option 1</option>
+                        <option value="option2" ${question.correctAnswer === 'option2' ? 'selected' : ''}>Option 2</option>
+                        <option value="option3" ${question.correctAnswer === 'option3' ? 'selected' : ''}>Option 3</option>
+                        <option value="option4" ${question.correctAnswer === 'option4' ? 'selected' : ''}>Option 4</option>
+                    </select>
+                `;
+            } else if (questionType === 'multi') {
+                correctAnswerHtml = `
+                    <input type="checkbox" id="edit-correct-answer-${sectionIndex}-${questionIndex}-1" ${question.correctAnswer.includes('option1') ? 'checked' : ''}>Option 1
+                    <input type="checkbox" id="edit-correct-answer-${sectionIndex}-${questionIndex}-2" ${question.correctAnswer.includes('option2') ? 'checked' : ''}>Option 2
+                    <input type="checkbox" id="edit-correct-answer-${sectionIndex}-${questionIndex}-3" ${question.correctAnswer.includes('option3') ? 'checked' : ''}>Option 3
+                    <input type="checkbox" id="edit-correct-answer-${sectionIndex}-${questionIndex}-4" ${question.correctAnswer.includes('option4') ? 'checked' : ''}>Option 4
+                `;
+            }
+
+            return correctAnswerHtml;
+        }
+
+        function createQuestionsTable(questions = [], sectionIndex) {
+            const tableDiv = document.createElement('div');
+            tableDiv.classList.add('section-questions');
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr id="table-header-${sectionIndex}">
+                        <th>Question</th>
+                        <th id="option-header-${sectionIndex}">Options</th>
+                        <th id="answer-header-${sectionIndex}">Correct Answer</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            questions.forEach((question, questionIndex) => {
+                addQuestionRow(tbody, sectionIndex, questionIndex, question);
+            });
+
+            const addQuestionBtn = document.createElement('button');
+            addQuestionBtn.textContent = 'Add New Question';
+            addQuestionBtn.onclick = function () {
+                const newQuestionIndex = questions.length;
+                const newQuestion = { question: '', options: ['', '', '', ''], correctAnswer: 'option1' };
+                questions.push(newQuestion);
+                addQuestionRow(tbody, sectionIndex, newQuestionIndex, newQuestion);
+            };
+
+            tableDiv.appendChild(table);
+            tableDiv.appendChild(addQuestionBtn);
+            return tableDiv;
+        }
+
+        window.changeQuestionType = function(sectionIndex) {
+            const questionTypeElement = document.getElementById(`question-type-${sectionIndex}`);
+            const questionType = questionTypeElement.value;
+
+            // Update table headers and questions based on the new question type
+            const optionHeader = document.getElementById(`option-header-${sectionIndex}`);
+            const answerHeader = document.getElementById(`answer-header-${sectionIndex}`);
+
+            const questionsTable = document.querySelector(`#edit-section-list .section:nth-child(${sectionIndex + 1}) .section-questions`);
+
+            if (questionsTable) {
+                const tbody = questionsTable.querySelector('tbody');
+                tbody.innerHTML = ''; // Clear existing questions
+
+                // Update the table headers based on the question type
+                if (questionType === 'numerical' || questionType === 'truefalse') {
+                    optionHeader.style.display = 'none'; // Hide option header for numerical and true/false
+                    answerHeader.textContent = (questionType === 'numerical') ? 'Correct Answer (Numerical)' : 'Correct Answer (True/False)';
+                } else {
+                    optionHeader.style.display = 'table-cell'; // Show option header for single and multi
+                    answerHeader.textContent = 'Correct Answer';
+                }
+
+                sections[sectionIndex].questions.forEach((question, questionIndex) => {
+                    addQuestionRow(tbody, sectionIndex, questionIndex, question);
+                });
+            }
+        };
+
+        function deleteQuestion(sectionIndex, questionIndex) {
+            sections[sectionIndex].questions.splice(questionIndex, 1);
+            displayEditSections();
+        }
+
+        function deleteSection(sectionIndex) {
+            sections.splice(sectionIndex, 1);
+            displayEditSections();
+        }
+
+        document.getElementById('add-new-section').onclick = function() {
+            const newSectionIndex = sections.length;
+            const newSection = { sectionName: 'New Section', questionType: 'single', positiveMarks: 1, negativeMarks: 0, questions: [] };
+            sections.push(newSection);
+            displayEditSections();
+        };
+
+        document.getElementById('save-updated-test').onclick = function() {
+            onAuthStateChanged(auth, (user) => {
+                const testRef = ref(db, `users/${user.uid}/classes/${className}/tests/${testTitle}/`);
+                const updatedTest = {
+                    title: document.getElementById('edit-test-title').value,
+                    subject: document.getElementById('edit-subject').value,
+                    duration: document.getElementById('edit-duration').value,
+                    sections: sections.map((section, sectionIndex) => {
+                        const sectionName = document.querySelector(`.section:nth-child(${sectionIndex + 1}) h2`).textContent;
+                        const positiveMarks = document.getElementById(`edit-positive-marks-${sectionIndex}`).value;
+                        const negativeMarks = document.getElementById(`edit-negative-marks-${sectionIndex}`).value;
+                        const questionType = document.getElementById(`question-type-${sectionIndex}`).value; // Save question type
+
+                        const questions = section.questions.map((question, questionIndex) => {
+                            const questionText = document.getElementById(`edit-question-${sectionIndex}-${questionIndex}`).value;
+                            const correctAnswer = document.getElementById(`edit-correct-answer-${sectionIndex}-${questionIndex}`).value;
+                            const options = [];
+
+                            for (let i = 0; i < 4; i++) {
+                                const optionValue = document.getElementById(`edit-option-${sectionIndex}-${questionIndex}-${i}`).value;
+                                options.push(optionValue);
+                            }
+
+                            return {
+                                question: questionText,
+                                options: options,
+                                correctAnswer: correctAnswer
+                            };
+                        });
+
+                        return {
+                            sectionName: sectionName,
+                            positiveMarks: positiveMarks,
+                            negativeMarks: negativeMarks,
+                            questionType: questionType,  // Save the question type
+                            questions: questions
+                        };
+                    })
+                };
+
+                set(testRef, updatedTest)
+                    .then(() => {
+                        alert("Test updated successfully!");
+                    })
+                    .catch((error) => {
+                        console.error("Error updating test:", error);
+                    });
+            });
+        };
+
+        // Call editTest to initialize the page with existing test data
+        editTest();
+        console.log(document.getElementById(`edit-positive-marks-${sectionIndex}`)); // should not be null
+
+    </script>
+</body>
+</html>

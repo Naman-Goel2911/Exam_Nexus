@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Pricing</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-image: url('assets/simple_bg.png');
+            background-size: cover;
+            background-position: center 90px;
+            background-repeat: no-repeat;
+        }
+
+        .nav-link {
+            position: relative;
+            color: #092742;
+            transition: color 0.3s, transform 0.3s;
+            font-size: 20px;
+            margin-right: 30px;
+            margin-left: 30px;
+            padding: 10px;
+            text-decoration: none;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            background-color: #092742;
+            transition: width 0.3s ease, left 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #092742;
+            transform: scale(1.1);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+            left: 0;
+        }
+
+        .nav-link.active::after {
+            width: 100%;
+            left: 0;
+        }
+
+        .nav-link.active {
+            color: #092742;
+            transform: scale(1.1);
+        }
+
+        .login-button {
+            background-color: #092742;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            transition: background-color 0.3s;
+        }
+
+        .login-button:hover {
+            background-color: #092742;
+        }
+
+        .card {
+            width: 100%;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            background-color: #ffffff;
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+        .card-title {
+            font-size: 2.5rem;
+            color: #092742;
+            margin-bottom: 20px;
+            font-family: 'Merriweather', serif;
+            font-weight: 400;
+        }
+
+        .card-text {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 100;
+            font-size: 20px;
+        }
+
+        .card-price {
+            font-size: 2.5rem;
+            color: #092742;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script>
+        function redirectToPage() {
+            window.location.href = "user.html;";
+        }
+    </script>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg bg-body-tertiary" style="font-family: 'Merriweather', serif;">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <img src="assets/ExamNexus.png" alt="ExamNexus" width="60" height="auto">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Pricing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="about.html">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="faq.html">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contact.html">Contact Us</a>
+                    </li>
+                </ul>
+                <form class="d-flex" role="search">
+                    <button class="login-button" type="button" onclick="redirectToPage()" style="margin-right: 20px;">
+                        <a href="user.html" style="color: inherit; text-decoration: none;">Sign In</a>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4" style="padding: 30px; font-family: 'Merriweather', serif; font-weight: 400;">Our Pricing Plans</h1>
+
+        <div class="row">
+            <div class="col-md-6 col-lg-6">
+                <div class="card" style="border: 3px solid #708090; border-radius: 4px; background-color: #E8E9EB;">
+                    <h2 class="card-title">Basic Plan</h2>
+                    <p class="card-text">Perfect for small institutions.</p>
+                    <a class="card-price" href="contact.html">Free</a>
+                    <a class="card-price" href="contact.html">Apply Now!</a>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item" style="background-color: #E8E9EB;">No AI-powered chatbot support</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-6">
+                <div class="card" style="border: 3px solid #092742; border-radius: 4px; background-color: #cce0f1;">
+                    <h2 class="card-title">Premium Plan</h2>
+                    <p class="card-text">For large institutions with advanced needs.</p>
+                    <a class="card-price" href="contact.html">₹499<span style="font-size: 15px;">/month</span></a>
+                    <a class="card-price" href="contact.html">Apply Now!</a>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item" style="background-color: #cce0f1;">Includes AI-powered chatbot support</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

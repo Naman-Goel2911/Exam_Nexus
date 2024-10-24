@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Instructions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #092742;
+        }
+
+        p {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        ul li {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #092742;
+            color: #ffffff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #28b4a4;
+        }
+
+        .section-details {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="test-title"></h2>
+    <p>Duration: <span id="test-duration"></span></p>
+    <div id="section-details"></div>
+    <button id="attempt-test-btn">Attempt Test</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+        authDomain: "examnexus-4b46c.firebaseapp.com",
+        databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+        projectId: "examnexus-4b46c",
+        storageBucket: "examnexus-4b46c.appspot.com",
+        messagingSenderId: "889907228722",
+        appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+        measurementId: "G-35EV53YEE5"
+    };
+
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const teacherUID = urlParams.get('teacherUID');
+    const className = urlParams.get('className');
+    const testTitle = urlParams.get('testTitle');
+
+
+    function fetchTestDetails() {
+        const testRef = ref(db, `users/${teacherUID}/classes/${className}/tests/${testTitle}`);
+
+        get(testRef).then(snapshot => {
+            const testData = snapshot.val();
+            if (testData) {
+                document.getElementById('test-title').textContent = testData.title;
+                document.getElementById('test-duration').textContent = testData.duration;
+
+                const sectionDetails = document.getElementById('section-details');
+                sectionDetails.innerHTML = '';
+
+                testData.sections.forEach((section, index) => {
+                    const sectionElement = document.createElement('div');
+                    sectionElement.classList.add('section-details');
+                    sectionElement.innerHTML = `
+                        <h3>Section ${index + 1}: ${section.sectionName}</h3>
+                        <p>Type of Questions: ${section.questionType}</p>
+                        <p>Positive Marks: ${section.positiveMarks}, Negative Marks: ${section.negativeMarks}</p>
+                        <p>Total Questions: ${section.questions.length}</p>
+                    `;
+                    sectionDetails.appendChild(sectionElement);
+                });
+            }
+        }).catch((error) => {
+            console.error('Error fetching test details:', error);
+        });
+    }
+
+    document.getElementById('attempt-test-btn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to attempt the test?')) {
+            window.location.href = `attemptTest.html?teacherUID=${teacherUID}&className=${className}&testTitle=${testTitle}`;
+        }
+    });
+
+
+    document.addEventListener('DOMContentLoaded', fetchTestDetails);
+
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Class</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            display: flex;
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background-color: #333;
+            padding: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 20px;
+            color: #30D5C8;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 10px 0;
+            border-bottom: 1px solid #444;
+            margin-bottom: 10px;
+        }
+
+        .sidebar a:hover {
+            background-color: #444;
+        }
+
+        /* Main content styling */
+        .main-content {
+            margin-left: 270px;
+            padding: 20px;
+            flex: 1;
+        }
+
+        .main-content h1 {
+            color: #333;
+        }
+
+        .student-info {
+            display: none;
+        }
+
+        input[type="text"], input[type="email"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #30D5C8;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #28b4a4;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        th {
+            background-color: #30D5C8;
+            color: white;
+        }
+    </style>
+    <script type="module">
+        window.onload = function () {
+            // Show modal for class name
+            document.querySelector('.modal').style.display = 'block';
+        };
+
+        window.showStudentInfo = function() {
+            document.querySelector('.student-info').style.display = 'block';
+        };
+
+        window.saveClassName = function () {
+            const className = document.getElementById('class-name-modal').value;
+            if (className) {
+                document.getElementById('class-name').value = className;
+                document.querySelector('.modal').style.display = 'none';
+                document.querySelector('.container').style.display = 'block';
+                document.body.classList.remove('blur-background');
+            } else {
+                alert("Please enter a class name.");
+            }
+        };
+
+        window.cancelClassCreation = function () {
+            window.location.href = 'teacher.html';
+        }; 
+
+        // Import necessary Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+        apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+        authDomain: "examnexus-4b46c.firebaseapp.com",
+        databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+        projectId: "examnexus-4b46c",
+        storageBucket: "examnexus-4b46c.appspot.com",
+        messagingSenderId: "889907228722",
+        appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+        measurementId: "G-35EV53YEE5"
+        };
+
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const db = getDatabase();
+
+        // Student list
+        let students = [];
+        let classlist = []
+
+        // Redirect if user not logged in
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'user.html';
+            }
+        });
+        
+        window.addStudent = function() {
+            const studentName = document.getElementById('student-name').value;
+            const studentEmail = document.getElementById('student-email').value;
+            if (studentName && studentEmail) {
+                students.push({ name: studentName, email: studentEmail });
+                updateStudentTable();
+                createStudentAccount(studentName, studentEmail); // Pass both name and email
+            } else {
+                alert("Please enter both name and email.");
+            }
+        };
+
+
+        // Update student table
+        function updateStudentTable() {
+            const tbody = document.getElementById('students-body');
+            tbody.innerHTML = '';
+            students.forEach(student => {
+                const row = `<tr><td>${student.name}</td><td>${student.email}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Handle CSV upload (for Excel files)
+        window.handleCSVUpload = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const lines = e.target.result.split('\n');
+                    lines.forEach(line => {
+                        const [name, email] = line.split(',');
+                        if (name && email) {
+                            students.push({ name, email });
+                            createStudentAccount(email);
+                        }
+                    });
+                    updateStudentTable();
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        // Save class to Firebase
+        window.saveClass = function() {
+            const className = document.getElementById('class-name').textContent;
+            if (!className || students.length === 0 ) {
+                alert("Please enter a class name and add at least one student.");
+                return;
+            }
+
+            const teacher = auth.currentUser;  // The teacher/admin
+            if (teacher) {
+                get(ref(db, 'users/' + teacher.uid + '/classes'))
+                        .then((snapshot) => {
+                        if (snapshot.exists()) {
+                            const existingclass = snapshot.val(); 
+                            classlist = [...existingclass, ...className]; // Append new students to the existing list
+                    }
+                        })
+                        .catch((error) => {
+                            console.error("Error fetching class data:", error);
+                        });
+                const classRef = ref(db, `users/${teacher.uid}/classes`);
+                set(classRef, {classlist})
+                    .then(() => {
+                        alert("Class saved successfully!");
+                    })
+                    .catch(err => {
+                        console.error("Error saving class: ", err);
+                    });
+                const onlyclassRef = ref(db, `classes/${className}`);
+                set(onlyclassRef, { students })
+                .then(() => {
+                        console.log("Class saved successfully!");
+                    })
+                    .catch(err => {
+                        console.error("Error saving class: ", err);
+                    });
+            } else {
+                alert("You are not signed in.");
+            }
+        };
+
+        function createStudentAccount(name, email) {
+            const teacherEmail = auth.currentUser.email;  // Store teacher's email
+            const teacherPassword = prompt("Please enter your password to continue");  // Ask for password
+
+            createUserWithEmailAndPassword(auth, email, "ExamNexus2")
+                .then((userCredential) => {
+                    const uid = userCredential.user.uid;  // Student UID
+                    const userRef = ref(db, `users/${uid}`);
+
+                    // Save student data
+                    set(userRef, {
+                        name: name,
+                        email: email,
+                        profession: 'student'
+                    }).then(() => {
+                        console.log(`Account and data saved for ${email}`);
+
+                        // Log teacher back in after creating student
+                        signInWithEmailAndPassword(auth, teacherEmail, teacherPassword)
+                            .then(() => {
+                                console.log("Teacher re-authenticated.");
+                            })
+                            .catch((error) => {
+                                console.error("Error logging teacher back in: ", error);
+                            });
+                    }).catch((error) => {
+                        console.error("Error saving student data: ", error);
+                    });
+                })
+                .catch((err) => {
+                    console.error("Error creating account: ", err);
+                });
+}
+    </script>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 contenteditable="true" id="class-name">New Class</h2>
+        <a href="#" onclick="showStudentInfo()">Student Info</a>
+        <a href="testCreation.html">Tests Created</a>
+        <a href="#">Create a Test</a>
+        <a href="#">Class Settings</a>
+    </div>
+
+    <!-- Main content area -->
+    <div class="main-content">
+        <h1>Class Management</h1>
+
+        <!-- Student Info Section (initially hidden) -->
+        <div class="student-info">
+            <h2>Student Details</h2>
+            <label for="student-name">Student Name:</label>
+            <input type="text" id="student-name" placeholder="Enter student name" required>
+
+            <label for="student-email">Student Email:</label>
+            <input type="email" id="student-email" placeholder="Enter student email" required>
+
+            <button onclick="addStudent()">Add Student</button>
+            <button onclick="document.getElementById('csv-upload').click()">Upload Excel</button>
+            <input type="file" id="csv-upload" accept=".csv" style="display:none;" onchange="handleCSVUpload(event)">
+
+            <h2>Student List</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Student Email</th>
+                    </tr>
+                </thead>
+                <tbody id="students-body"></tbody>
+            </table>
+        </div>
+
+        <button onclick="saveClass()">Save Class</button>
+    </div>
+</body> 
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Class</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #f7f7f7;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: #092742;
+            color: #ffffff;
+            width: 270px;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        .sidebar h2 {
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            color: #ffffff;
+            text-decoration: none;
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #4460AA;
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 295px;
+            padding: 20px;
+            flex: 1;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background-color: #f7f7f7;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar img {
+            height: 50px;
+        }
+
+        .navbar h1 {
+            color: #092742;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        /* User Info Section */
+        #user-info {
+            background-color: #ffffff;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+
+        #user-info p {
+            color: #092742;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        /* Chart container */
+        #progress-chart-container {
+            width: 80%;
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Student's Dashboard</h2>
+        <a href="student.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="#"><i class="fas fa-user"></i> My Account</a>
+        <a href="joinClass.html"><i class="fas fa-plus"></i> Join/Change Class</a>
+        <a href="yourTest.html"><i class="fa-solid fa-database"></i> My Tests</a>
+        <a href="report.html"><i class="fas fa-info-circle"></i> Help</a>
+        <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+    </div>
+
+    <div class="main-content">
+        <h2>Join a New Class</h2>
+        <div id="join-class-form">
+            <input type="text" id="teacher-uid" placeholder="Enter Teacher UID" required>
+            <input type="text" id="class-name" placeholder="Enter Class Name" required>
+            <button id="join-class-btn">Join Class</button> <!-- This is the missing button -->
+            <p id="message"></p>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // Firebase Configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+            authDomain: "examnexus-4b46c.firebaseapp.com",
+            databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+            projectId: "examnexus-4b46c",
+            storageBucket: "examnexus-4b46c.appspot.com",
+            messagingSenderId: "889907228722",
+            appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+            measurementId: "G-35EV53YEE5"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.database();
+
+        document.getElementById('join-class-btn').addEventListener('click', joinClass);
+
+        function joinClass() {
+            const teacherUID = document.getElementById('teacher-uid').value;
+            const className = document.getElementById('class-name').value;
+            const messageEl = document.getElementById('message');
+
+            if (!teacherUID || !className) {
+                messageEl.textContent = "Please fill in both fields.";
+                return;
+            }
+
+            // Check if the teacherUID and className exist in the Firebase database
+            db.ref(`teachers/${teacherUID}/classes/${className}`).once('value')
+            .then((snapshot) => {
+                if (snapshot.exists()) {
+                    // Teacher UID and class name are valid, update student's data
+                    updateStudentClass(teacherUID, className);
+                } else {
+                    messageEl.textContent = "Invalid teacher UID or class name.";
+                }
+            })
+            .catch((error) => {
+                console.error("Error verifying class:", error);
+                messageEl.textContent = "Error verifying class.";
+            });
+        }
+
+        // Function to update the student's class in Firebase
+        function updateStudentClass(teacherUID, className) {
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    const userId = user.uid;
+                    
+                    // Update the student's classJoined and teacher in the database
+                    db.ref('users/' + userId).update({
+                        classJoined: className,
+                        teacher: teacherUID
+                    }).then(() => {
+                        document.getElementById('message').textContent = "Class successfully updated!";
+                        document.getElementById('message').className = "success";
+                    }).catch((error) => {
+                        console.error("Error updating class:", error);
+                        document.getElementById('message').textContent = "Failed to update class.";
+                    });
+                } else {
+                    window.location.href = 'user.html'; // Redirect to login if user is not authenticated
+                }
+            });
+        }
+    </script>
+</body>
+</html>

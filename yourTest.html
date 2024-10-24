@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher's Portal</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* General Body Styles */
+        body {
+            background-color: #f7f7f7;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: #092742;
+            color: #ffffff;
+            width: 270px; /* Sidebar width */
+            padding: 20px;
+            padding-right: 10px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;  /* Full height of the viewport */
+            overflow: auto;  /* Allows scrolling within the sidebar if needed */
+        }
+
+        .sidebar h2 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            margin: 10px 0;
+            padding: 10px;
+        }
+
+        .sidebar a {
+            color: #ffffff;
+            text-decoration: none;
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #4460AA; /* Sidebar link hover color */
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+        }
+
+        /* Main Content Styles */
+
+        /* Navbar Styles */
+        .navbar {
+            background-color: #f7f7f7;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar img {
+            height: 50px;
+        }
+
+        .navbar h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        /* Welcome Section */
+        #welcome-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        #welcome-message {
+            color: #092742;
+            font-size: 28px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        /* User Info Section */
+        #user-info {
+            background-color: #ffffff;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+
+        #user-info p {
+            color: #092742;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .main-content {
+            margin-left: 295px;
+            padding: 20px;
+            flex: 1;
+        }
+
+        #test-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+    
+        }
+
+        .test-card {
+            width: 250px;
+            padding: 20px;
+            background-color: #f4f4f4;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .test-card:hover {
+            background-color: #e0e0e0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-card h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .test-card p {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .test-card button {
+            background-color: #092742;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .test-card button:hover {
+            background-color: #28b4a4;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Student's Dashboard</h2>
+        <a href="student.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="#"><i class="fas fa-user"></i> My Account</a>
+        <a href="joinClass.html"><i class="fas fa-plus"></i> Join/Change Class</a>
+        <a href="yourTest.html"><i class="fa-solid fa-database"></i> My Tests</a>
+        <a href="report.html"><i class="fas fa-info-circle"></i> Help</a>
+        <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Navbar -->
+        <div class="navbar">
+            <div> 
+                <a href="index.html">
+                    <img src="assets/ExamNexus.png" alt="Logo">
+                </a>
+            </div>
+            <h1 id="welcome-message"></h1>
+        </div>
+
+        <!-- User Info Section -->
+        <div id="user-info">
+            <p id="user-name"> </p>
+            <p id="user-email"> </p>
+        </div>
+
+        <div style = "display: flex; justify-content: space-between; max-width: 60%;"id="test-container"></div>
+
+
+        
+        <!-- Include Firebase and custom JS files -->
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+        <script src="student.js"></script>
+    </div>
+
+</body>
+</html>

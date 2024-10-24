@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Test Creation Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="class.css">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        td input {
+            width: 95%;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        td select {
+            width: 100%;
+            padding: 5px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .test-table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 style="border-bottom: 5px solid white;" id="class-name">ClassName</h2>
+        <a onclick="showClassHome()"><i class="fa-solid fa-house"></i>Class Dashboard</a>
+        <a onclick="showStudentInfo()"><i class="fas fa-info-circle"></i> Student Info</a>
+        <a onclick="showsavedtest()"><i class="fa-solid fa-database"></i>Tests Created</a>
+        <a onclick="showTestCreation()"><i class="fas fa-plus"></i>Create a Test</a>
+        <a style="position: fixed; vertical-align: bottom; margin-top: 24%;"  href="#" id="user-message"></a>
+    </div>
+
+<div class="main-content">
+    <h2>Create a New Test</h2>
+    <div class="input-group">
+        <h3>Test Title:</h3>
+        <input type="text" id="test-title" placeholder="Enter test title">
+    </div>
+    
+    <div class="input-group">
+        <h3>Subject:</h3>
+        <input type="text" id="subject" placeholder="Enter the subject of the test">
+    </div>
+
+    <div class="input-group">
+        <h3>Duration:</h3>
+        <input type="time" id="duration" placeholder="Enter the duration of the test">
+    </div>
+
+    <button class="start-test" onclick="startTest()">Start Test Creation</button>
+
+    <!-- Section to add questions directly in the table -->
+    <div id="question-section" style="display: none;">
+        <h2 id="display-title"></h2>
+        <p id="display-subject"></p>
+        
+        <button class="add-question" onclick="addNewRow()">Add New Question</button>
+        <button class="save-test" onclick="saveTest()">Save Test</button>
+
+        <h2 class="test-table">Added Questions</h2>
+        <table id="questions-table" border="1">
+            <thead>
+                <tr>
+                    <th>Question</th>
+                    <th>Option 1</th>
+                    <th>Option 2</th>
+                    <th>Option 3</th>
+                    <th>Option 4</th>
+                    <th>Correct Answer</th>
+                </tr>
+            </thead>
+            <tbody id="questions-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    window.showStudentInfo = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `studentinfo.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showTestCreation = function() {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testCreation.html?className=${encodeURIComponent(className)}`;
+    };
+
+    window.showsavedtest = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `testsaved.html?className=${encodeURIComponent(className)}`;
+    }
+
+    window.showClassHome = function () {
+        const className = document.getElementById('class-name').textContent;
+        window.location.href = `existingclass.html?className=${encodeURIComponent(className)}`;
+    }
+
+    const className = new URLSearchParams(window.location.search).get('className');
+    document.getElementById('class-name').textContent = className;
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHiNT1bNwJIRQA2xpxfHYmSwWi_YWfsAM",
+        authDomain: "examnexus-4b46c.firebaseapp.com",
+        databaseURL: "https://examnexus-4b46c-default-rtdb.firebaseio.com",
+        projectId: "examnexus-4b46c",
+        storageBucket: "examnexus-4b46c.appspot.com",
+        messagingSenderId: "889907228722",
+        appId: "1:889907228722:web:606ee1b0e185a2c15c8c2b",
+        measurementId: "G-35EV53YEE5"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase();
+    const auth = getAuth();
+    const db = getDatabase()
+
+    let questions = [];
+
+    // Start Test Creation
+    window.startTest = function() {
+        const title = document.getElementById('test-title').value;
+        const subject = document.getElementById('subject').value;
+
+        if (!title || !subject) {
+            alert("Please enter both title and subject.");
+            return;
+        }
+
+        document.getElementById('display-title').innerText = title;
+        document.getElementById('display-subject').innerText = `Subject: ${subject}`;
+        document.getElementById('question-section').style.display = 'block';
+    }
+
+    // Add new row for question and options directly in table
+    window.addNewRow = function() {
+        const questionsBody = document.getElementById('questions-body');
+        const row = document.createElement('tr');
+
+        // Create input boxes for question and options
+        const questionCell = createInputCell("Enter question");
+        row.appendChild(questionCell);
+
+        for (let i = 1; i <= 4; i++) {
+            const optionCell = createInputCell(`Enter option ${i}`);
+            row.appendChild(optionCell);
+        }
+
+        // Correct answer dropdown
+        const correctAnswerCell = document.createElement('td');
+        const correctAnswerSelect = document.createElement('select');
+        correctAnswerSelect.innerHTML = `
+            <option value="">Select Correct Answer</option>
+            <option value="option1">Option 1</option>
+            <option value="option2">Option 2</option>
+            <option value="option3">Option 3</option>
+            <option value="option4">Option 4</option>`;
+        correctAnswerCell.appendChild(correctAnswerSelect);
+        row.appendChild(correctAnswerCell);
+
+        questionsBody.appendChild(row);
+    }
+
+    // Function to create input cells for questions and options
+    function createInputCell(placeholderText) {
+        const cell = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = placeholderText;
+        cell.appendChild(input);
+        return cell;
+    }
+    
+    // Save test and check if all fields are filled
+    window.saveTest = function() {
+        const rows = document.querySelectorAll('#questions-body tr');
+        questions = [];
+
+        let allFieldsFilled = true;
+
+        rows.forEach((row, index) => {
+            const questionObj = {};
+            const inputs = row.querySelectorAll('input');
+            const correctAnswer = row.querySelector('select').value;
+            if (!inputs[0].value.trim()) {
+                allFieldsFilled = false;
+            }
+            questionObj.question = inputs[0].value.trim();
+            questionObj.options = {};
+
+            for (let i = 1; i <= 4; i++) {
+                if (!inputs[i].value.trim()) {
+                    allFieldsFilled = false;
+                }
+                questionObj.options[i - 1] = {
+                    type: 'text',
+                    value: inputs[i].value.trim()
+                };
+            }
+            if (!correctAnswer) {
+                allFieldsFilled = false;
+            } else {
+                questionObj.correctAnswer = correctAnswer;
+            }
+
+            questions.push(questionObj);
+        });
+
+        if (!allFieldsFilled) {
+            alert("Please fill in all fields before saving the test.");
+            return;
+        }
+
+        saveTestToDatabase();
+    }
+
+
+    window.saveTestToDatabase = function() {
+        const title = document.getElementById('test-title').value;
+        const subject = document.getElementById('subject').value;
+        const duration = document.getElementById('duration').value;
+
+        if (questions.length === 0) {
+            alert("Please add at least one question before saving.");
+            return;
+        }
+
+        const testData = {
+            title: title,
+            subject: subject,
+            duration: duration,
+            questions: questions
+        };
+
+        const teacher = auth.currentUser;  // Get current authenticated user (teacher)
+        const className = document.getElementById('class-name').textContent;  // Get the class name
+
+        if (teacher && className) {
+            const newTestRef = ref(database, `users/${teacher.uid}/classes/${className}/tests/${title}/`); 
+            set(newTestRef, testData)
+                .then(() => {
+                    alert('Test saved successfully under the current class!');
+                    window.location.href = `editTest.html?className=${encodeURIComponent(title)}`;
+                    clearAll(); 
+                })
+                .catch((error) => {
+                    alert('Error saving test: ' + error.message);
+                });
+        } else {
+            alert("You are not signed in or class name is missing.");
+        }
+    }
+
+    function clearAll() {
+        document.getElementById('test-title').value = '';
+        document.getElementById('subject').value = '';
+        document.getElementById('duration').value = '';
+        document.getElementById('questions-body').innerHTML = '';
+        questions = [];
+    }
+
+    function displayUserData() {
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userId = user.uid;
+                const userRef = ref(db, 'users/' + userId); 
+
+                get(userRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        if (userData && userData.classes) {
+                            document.getElementById('user-message').innerHTML = `<i class="fa-solid fa-user"></i>Hi, ${userData.name}!`;
+                        } else {
+                            console.error("User data not found or no classes associated.");
+                        }
+                    } else {
+                        console.error("No user data available.");
+                    }
+                }).catch((error) => {
+                    console.error("Error fetching user data:", error);
+                });
+            } else {
+                console.log("Not Signed In");
+                window.location.href = "user.html";
+            }
+        });
+    }
+
+document.addEventListener('DOMContentLoaded', displayUserData);
+</script>
+
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher's Portal</title>
+
+    <!-- Font Awesome for button icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* General Body Styles */
+        body {
+            background-color: #f7f7f7;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* Floating Button Styles */
+        #floating-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #092742;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.3s;
+        }
+
+        #floating-btn:hover {
+            background-color: #4460AA;
+        }
+
+        /* Chatbot Modal Styles */
+        #chatbot-modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            bottom: 0;
+            right: 20px;
+            width: 400px;
+            height: 600px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            background-color: white;
+            z-index: 1000;
+        }
+
+        #chatbot-modal iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 10px;
+        }
+
+        /* Close Button */
+        #close-chatbot {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        #close-chatbot:hover {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Chat Button -->
+    <button id="floating-btn"><i class="fas fa-comments"></i></button>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbot-modal">
+        <button id="close-chatbot">&times;</button>
+        <iframe src="chatbot.html"></iframe>
+    </div>
+
+    <script>
+        // Get the floating button and chatbot modal
+        const floatingBtn = document.getElementById('floating-btn');
+        const chatbotModal = document.getElementById('chatbot-modal');
+        const closeChatbot = document.getElementById('close-chatbot');
+
+        // Show the chatbot modal when the floating button is clicked
+        floatingBtn.addEventListener('click', () => {
+            chatbotModal.style.display = 'block';
+        });
+
+        // Close the chatbot modal when the close button is clicked
+        closeChatbot.addEventListener('click', () => {
+            chatbotModal.style.display = 'none';
+        });
+
+        // Optional: Click outside the modal to close it
+        window.addEventListener('click', (e) => {
+            if (e.target === chatbotModal) {
+                chatbotModal.style.display = 'none';
+            }
+        });
+    </script>
+
+</body>
+</html>
